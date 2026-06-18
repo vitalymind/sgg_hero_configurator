@@ -115,7 +115,11 @@ export class StatusScreenCover extends LitElement {
 					<h1>SGG Hero Configurator</h1>
 					<div class="form-group">
 						<label>Login</label>
-						<span class="hint">Hint: your email is user@email.com <span class="copy-span" @click=${() => navigator.clipboard.writeText('user@email.com')}>📋</span></span>
+						<span class="hint">Hint: your email is user@email.com
+							<span class="copy-span" @click=${() => navigator.clipboard.writeText('user@email.com')}>📋</span>
+							or user2@email.com
+							<span class="copy-span" @click=${() => navigator.clipboard.writeText('user2@email.com')}>📋</span>
+						</span>
 						<input class="input-field" type="email" placeholder="Email" .value=${this.emailInput} @input=${(e: any) => this.emailInput = e.target.value} @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.handleSendOtp()} />
 					</div>
 					<div class="dialog-actions">
