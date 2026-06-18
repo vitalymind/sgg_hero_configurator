@@ -68,7 +68,7 @@ export function dbGetHeroesSince(db: DatabaseSync, timestamp: number): Hero[] {
 	const stmt = db.prepare(`
 		SELECT id, uuid, name, special_skill_id, attack, defense, status 
 		FROM heroes 
-		WHERE last_updated > ? AND status = 'active'
+		WHERE last_updated > ?
 	`);
 	return stmt.all(timestamp) as unknown as Hero[];
 }
