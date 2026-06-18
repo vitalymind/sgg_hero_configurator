@@ -264,36 +264,41 @@ app.listen(port, () => {
 //Debug
 function debugTestFillDatabase(): void {
 	const initialHeroes = [
-		{
-			name: "Lianna",
-			attack: 95,
-			defense: 75,
-			special_skill_id: "perfect_shot"
-		},
-		{
-			name: "Richard",
-			attack: 75,
-			defense: 95,
-			special_skill_id: "frost_strike"
-		},
-		{
-			name: "Vivica",
-			attack: 65,
-			defense: 90,
-			special_skill_id: "healing_light"
-		},
-		{
-			name: "Elena",
-			attack: 90,
-			defense: 70,
-			special_skill_id: "blade_storm"
-		},
-		{
-			name: "Sartana",
-			attack: 85,
-			defense: 80,
-			special_skill_id: "death_strike"
-		}
+		{ name: "Lianna", attack: 95, defense: 75, special_skill_id: "perfect_shot" },
+		{ name: "Richard", attack: 75, defense: 95, special_skill_id: "frost_strike" },
+		{ name: "Vivica", attack: 65, defense: 90, special_skill_id: "healing_light" },
+		{ name: "Elena", attack: 90, defense: 70, special_skill_id: "blade_storm" },
+		{ name: "Sartana", attack: 85, defense: 80, special_skill_id: "death_strike" },
+		{ name: "Gravemaker", attack: 85, defense: 85, special_skill_id: "burn" },
+		{ name: "Telluria", attack: 60, defense: 98, special_skill_id: "force_of_forest" },
+		{ name: "Vela", attack: 85, defense: 75, special_skill_id: "water_damage" },
+		{ name: "Joon", attack: 95, defense: 60, special_skill_id: "solar_beam" },
+		{ name: "Magni", attack: 92, defense: 65, special_skill_id: "sniper_strike" },
+		{ name: "Marjana", attack: 85, defense: 75, special_skill_id: "magma_blast" },
+		{ name: "Isarnia", attack: 88, defense: 68, special_skill_id: "glacial_shatter" },
+		{ name: "Kadilen", attack: 75, defense: 85, special_skill_id: "shield_of_nature" },
+		{ name: "Elkanen", attack: 78, defense: 82, special_skill_id: "life_drain" },
+		{ name: "Azlar", attack: 90, defense: 60, special_skill_id: "volcano_eruption" },
+		{ name: "Quintus", attack: 85, defense: 65, special_skill_id: "lightning_strike" },
+		{ name: "Domitia", attack: 80, defense: 80, special_skill_id: "shadow_strike" },
+		{ name: "Leonidas", attack: 82, defense: 78, special_skill_id: "holy_light" },
+		{ name: "Obakan", attack: 85, defense: 70, special_skill_id: "counter_attack" },
+		{ name: "Horghall", attack: 65, defense: 95, special_skill_id: "tree_smash" },
+		{ name: "Thorne", attack: 70, defense: 90, special_skill_id: "ice_cleave" },
+		{ name: "Justice", attack: 65, defense: 95, special_skill_id: "blinding_light" },
+		{ name: "Khagan", attack: 75, defense: 85, special_skill_id: "khan_command" },
+		{ name: "Heimdall", attack: 65, defense: 98, special_skill_id: "horn_of_giallar" },
+		{ name: "Alfrike", attack: 85, defense: 88, special_skill_id: "mindless_attack" },
+		{ name: "Bera", attack: 75, defense: 85, special_skill_id: "moth_swarm" },
+		{ name: "Freya", attack: 70, defense: 90, special_skill_id: "raven_flock" },
+		{ name: "Frigg", attack: 85, defense: 80, special_skill_id: "nature_defense_down" },
+		{ name: "Odin", attack: 88, defense: 75, special_skill_id: "holy_damage" },
+		{ name: "Finley", attack: 92, defense: 70, special_skill_id: "chain_strike" },
+		{ name: "Killhare", attack: 95, defense: 65, special_skill_id: "reckless_swing" },
+		{ name: "Jabberwock", attack: 88, defense: 75, special_skill_id: "double_strike" },
+		{ name: "Seshat", attack: 85, defense: 75, special_skill_id: "replicating_minion" },
+		{ name: "Black Knight", attack: 60, defense: 99, special_skill_id: "taunt" },
+		{ name: "Krampus", attack: 65, defense: 95, special_skill_id: "frost_taunt" }
 	];
 	for (const hero of initialHeroes) {
 		const heroUuid = generateShortUuid();
