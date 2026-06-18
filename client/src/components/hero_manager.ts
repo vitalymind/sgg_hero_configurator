@@ -9,7 +9,8 @@ import {
 	STATE_AUTH_EXPIRED,
 	STATE_SYNCING_DATA,
 	STATE_FATAL_VALIDATION,
-	HEARTBEAT_TIMEOUT_SECONDS
+	HEARTBEAT_TIMEOUT_SECONDS,
+	API_BASE_URL
 } from '../constants.ts';
 import { modalBackdropStyle, modalContainerStyle } from '../common_styles.ts';
 import './hero_list.ts';
@@ -91,7 +92,7 @@ export class HeroManager extends LitElement {
 		if (this.eventSource) {
 			this.eventSource.close();
 		}
-		this.eventSource = new EventSource('/api/heroes/stream');
+		this.eventSource = new EventSource(`${API_BASE_URL}/api/heroes/stream`);
 		
 		this.eventSource.onmessage = (e) => {
 			this.resetPingTimeout();
@@ -155,7 +156,7 @@ export class HeroManager extends LitElement {
 	private async fetchHeroes(silent: boolean = false) {
 		if (!silent) this.isSyncing = true;
 		try {
-			const response = await fetch(`/api/heroes?lastUpdated=${this.lastUpdated}`, { credentials: 'include' });
+			const response = await fetch(`${API_BASE_URL}/api/heroes?lastUpdated=${this.lastUpdated}`, { credentials: 'include' });
 			if (response.ok) {
 				const data = await response.json() as HeroesSyncResponse;
 				this.lastUpdated = data.lastUpdated;
@@ -232,7 +233,7 @@ export class HeroManager extends LitElement {
 
 		try {
 			const method = heroData.uuid !== null ? 'PUT' : 'POST';
-			const url = heroData.uuid !== null ? `/api/heroes/${heroData.uuid}` : '/api/heroes';
+			const url = heroData.uuid !== null ? `${API_BASE_URL}/api/heroes/${heroData.uuid}` : `${API_BASE_URL}/api/heroes`;
 
 			const res = await fetch(url, {
 				method,

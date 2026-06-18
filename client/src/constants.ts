@@ -22,3 +22,5 @@ export const LOCAL_STORAGE_CACHE_KEY = 'hero_manager_cache';
 
 export const MAX_ATTACK_DEFENSE_VALUE = 1000;
 export const MAX_STRING_LENGTH = 50;
+
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';

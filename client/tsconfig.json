@@ -19,7 +19,8 @@
     "noFallthroughCasesInSwitch": true,
 
 		"experimentalDecorators": true,
-		"useDefineForClassFields": false
+		"useDefineForClassFields": false,
+		"types": ["vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx"],
   "exclude": ["node_modules"]

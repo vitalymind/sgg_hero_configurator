@@ -1,2 +1,0 @@
-##REQUIREMENTS
-NodeJs v22.5+

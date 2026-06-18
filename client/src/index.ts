@@ -11,7 +11,8 @@ import {
 	STATE_AUTH_SENDING_OTP,
 	STATE_AUTH_OTP,
 	STATE_AUTH_VERIFYING,
-	STATE_AUTH_FAILED
+	STATE_AUTH_FAILED,
+	API_BASE_URL
 } from './constants.ts';
 
 @customElement('hero-configurator')
@@ -59,7 +60,7 @@ export class HeroConfigurator extends LitElement {
 
 	private async initServerConnection(): Promise<void> {
 		try {
-			const result = await fetch('/api/connect', { credentials: 'include' });
+			const result = await fetch(`${API_BASE_URL}/api/connect`, { credentials: 'include' });
 			if (result.status == 200) {
 				this.showStatusCover = false;
 			} else if (result.status == 401) {
@@ -82,7 +83,7 @@ export class HeroConfigurator extends LitElement {
 		const email = e.detail.email;
 		
 		try {
-			await fetch('/api/login', {
+			await fetch(`${API_BASE_URL}/api/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email })
@@ -100,7 +101,7 @@ export class HeroConfigurator extends LitElement {
 		const { email, otp } = e.detail;
 		
 		try {
-			const result = await fetch('/api/login/verify', {
+			const result = await fetch(`${API_BASE_URL}/api/login/verify`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, otp })
