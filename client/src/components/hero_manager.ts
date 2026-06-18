@@ -8,7 +8,8 @@ import {
 	STATE_FATAL_CLIENT,
 	STATE_AUTH_EXPIRED,
 	STATE_SYNCING_DATA,
-	STATE_FATAL_VALIDATION
+	STATE_FATAL_VALIDATION,
+	HEARTBEAT_TIMEOUT_SECONDS
 } from '../constants.ts';
 import { modalBackdropStyle, modalContainerStyle } from '../common_styles.ts';
 import './hero_list.ts';
@@ -23,6 +24,8 @@ export class HeroManager extends LitElement {
 
 	@state() private isDialogOpen = false;
 	@state() private currentEditHero: Hero | null = null;
+	private eventSource: EventSource | null = null;
+	private pingTimeout: any = null;
 
 	@query('hero-list') heroList: any;
 	@query('hero-form-dialog') formDialog: any;
@@ -57,7 +60,53 @@ export class HeroManager extends LitElement {
 	connectedCallback() {
 		super.connectedCallback();
 		this.loadFromCache();
-		this.fetchHeroes();
+		this.fetchHeroes(false);
+		this.initEventSource();
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		if (this.eventSource) {
+			this.eventSource.close();
+		}
+		if (this.pingTimeout) {
+			clearTimeout(this.pingTimeout);
+		}
+	}
+
+	private resetPingTimeout() {
+		if (this.pingTimeout) {
+			clearTimeout(this.pingTimeout);
+		}
+		this.pingTimeout = setTimeout(() => {
+			console.warn("SSE Heartbeat lost. Disconnecting...");
+			if (this.eventSource) {
+				this.eventSource.close();
+			}
+			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
+		}, HEARTBEAT_TIMEOUT_SECONDS * 1000);
+	}
+
+	private initEventSource() {
+		if (this.eventSource) {
+			this.eventSource.close();
+		}
+		this.eventSource = new EventSource('/api/heroes/stream');
+		
+		this.eventSource.onmessage = (e) => {
+			this.resetPingTimeout();
+			if (e.data === 'update') {
+				this.fetchHeroes(true);
+			}
+		};
+		this.eventSource.onopen = () => {
+			this.resetPingTimeout();
+			this.fetchHeroes(true);
+		};
+		this.eventSource.onerror = (e) => {
+			console.error("EventSource failed", e);
+			this.fetchHeroes(true);
+		};
 	}
 
 	private loadFromCache() {
@@ -98,13 +147,13 @@ export class HeroManager extends LitElement {
 		this.requestUpdate();
 	}
 
-	private async fetchHeroesClearCache() {
+	private async fetchHeroesClearCache(silent: boolean = false) {
 		this.clearCache();
-		await this.fetchHeroes();
+		await this.fetchHeroes(silent);
 	}
 
-	private async fetchHeroes() {
-		this.isSyncing = true;
+	private async fetchHeroes(silent: boolean = false) {
+		if (!silent) this.isSyncing = true;
 		try {
 			const response = await fetch(`/api/heroes?lastUpdated=${this.lastUpdated}`, { credentials: 'include' });
 			if (response.ok) {
@@ -124,7 +173,7 @@ export class HeroManager extends LitElement {
 				}
 
 				if (this.heroesMap.size === 0 && data.activeUuids && data.activeUuids.length > 0) {
-					this.fetchHeroesClearCache();
+					this.fetchHeroesClearCache(silent);
 					return;
 				}
 
@@ -142,7 +191,7 @@ export class HeroManager extends LitElement {
 			console.error("Failed to fetch heroes", e);
 			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
 		} finally {
-			this.isSyncing = false;
+			if (!silent) this.isSyncing = false;
 		}
 	}
 
@@ -227,8 +276,8 @@ export class HeroManager extends LitElement {
 				.heroes="${visibleHeroes}"
 				.filterQuery="${this.filterQuery}"
 				@filter-changed="${this.handleFilterChanged}"
-				@refresh-heroes="${this.fetchHeroes}"
-				@refresh-heroes-cache="${this.fetchHeroesClearCache}"
+				@refresh-heroes="${() => this.fetchHeroes(false)}"
+				@refresh-heroes-cache="${() => this.fetchHeroesClearCache(false)}"
 				@create-hero="${this.handleCreateHero}"
 				@edit-hero="${this.handleEditHero}"
 			></hero-list>

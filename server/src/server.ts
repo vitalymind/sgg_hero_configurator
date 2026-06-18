@@ -3,12 +3,12 @@ import { DatabaseSync } from 'node:sqlite';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import crypto from 'crypto';
-import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS, ALLOWED_UUID_CHARACTERS } from './constants.js';
-import { dbCreateHero, dbGetHeroesSince, dbGetActiveUuids, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString, generateShortUuid } from './database.js';
+import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS, ALLOWED_UUID_CHARACTERS, HEARTBEAT_SEND_RATE_SECONDS, SESSION_LENGTH_MINUTES } from './constants.js';
+import { dbCreateHero, dbGetHeroesSince, dbGetActiveUuids, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString, generateShortUuid, dbGetSession, dbCreateOrUpdateSession, dbDeleteSession } from './database.js';
 
 //Config
-const whitelistedEmails: string[] = ["user@email.com"]
-const maxSessionAge = 10 * 60 * 1000;
+const whitelistedEmails: string[] = ["user@email.com", "user2@email.com"]
+const maxSessionAge = SESSION_LENGTH_MINUTES * 60 * 1000;
 
 //Init
 const app = express();
@@ -18,15 +18,9 @@ const port = process.env.PORT || 3000;
 const dbPath = process.env.DB_PATH || path.join(__dirname, '../data/database.sqlite');
 const db = new DatabaseSync(dbPath);
 
-/*
-	Simple session handling with http cookie.
-	This is just a mock up, sessions should be saved in such a way that
-	they would survive server restart, for exaple in DB
-*/
-const activeSessions = new Map<string, { email: string, expiresAt: number }>();
-
+//Session handling with http cookie.
 function isValidSession(token: string, res: Response): boolean {
-	const session = activeSessions.get(token);
+	const session = dbGetSession(db, token);
 
 	if (!session) {
 		return false;
@@ -34,7 +28,7 @@ function isValidSession(token: string, res: Response): boolean {
 
 	if (Date.now() > session.expiresAt) {
 		writeLog(`[AUTH]: Session with ${session.email} has expired, re-login required`);
-		activeSessions.delete(token);
+		dbDeleteSession(db, token);
 		return false;
 	}
 
@@ -44,9 +38,10 @@ function isValidSession(token: string, res: Response): boolean {
 }
 
 function refreshSession(token: string, res: Response): void {
-	const sessionData = activeSessions.get(token);
+	const sessionData = dbGetSession(db, token);
 	if (sessionData) {
 		sessionData.expiresAt = Date.now() + maxSessionAge;
+		dbCreateOrUpdateSession(db, token, sessionData.email, sessionData.expiresAt);
 		res.cookie('auth_token', token, {
 			httpOnly: true, 
 			secure: process.env.NODE_ENV === 'production',
@@ -72,7 +67,7 @@ function generateOtp(): string {
 function writeLog(log: string, token: string = ""): void {
 	var user = "";
 	if (token !== "") {
-		const session = activeSessions.get(token);
+		const session = dbGetSession(db, token);
 		if (session) {user = session.email}
 	}
 	console.log(`${log}, ${user !== '' ? 'User email: ' + user : ''}`);
@@ -150,10 +145,7 @@ app.post('/api/login/verify', (req: Request, res: Response) => {
 	writeLog(`[AUTH]: email ${email} logged in with ${otp}`);
 
 	const sessionToken = crypto.randomUUID();
-	activeSessions.set(sessionToken, {
-		email: email,
-		expiresAt: Date.now() + maxSessionAge
-	});
+	dbCreateOrUpdateSession(db, sessionToken, email, Date.now() + maxSessionAge);
 	res.cookie('auth_token', sessionToken, {
 		httpOnly: true, 
 		secure: process.env.NODE_ENV === 'production',
@@ -164,6 +156,38 @@ app.post('/api/login/verify', (req: Request, res: Response) => {
 	return res.status(200).end();
 });
 
+// Heartbeat and outside updates
+
+const sseClients = new Set<Response>();
+
+function notifyClients() {
+	for (const client of sseClients) {
+		client.write('data: update\n\n');
+	}
+}
+
+setInterval(() => {
+	for (const client of sseClients) {
+		client.write('data: ping\n\n');
+	}
+}, HEARTBEAT_SEND_RATE_SECONDS * 1000);
+
+app.get('/api/heroes/stream', (req: Request, res: Response) => {
+	const token = req.cookies.auth_token;
+	if (!token || !isValidSession(token, res)) {
+		return res.status(401).end();
+	}
+	res.setHeader('Content-Type', 'text/event-stream');
+	res.setHeader('Cache-Control', 'no-cache');
+	res.setHeader('Connection', 'keep-alive');
+	res.flushHeaders();
+
+	sseClients.add(res);
+
+	req.on('close', () => {
+		sseClients.delete(res);
+	});
+});
 
 // DB routes
 app.get('/api/heroes', (req: Request, res: Response) => {
@@ -217,6 +241,7 @@ app.post('/api/heroes', (req: Request, res: Response) => {
 		const heroUuid = generateShortUuid();
 		const newHero = dbCreateHero(db, heroUuid, name, attack, defense, specialSkillId);
 		writeLog(`[DB]: Creating hero ${name} data with uuid ${heroUuid}`, token);
+		notifyClients();
 		return res.status(200).json(newHero);
 	} catch (error) {
 		writeLog(`[DB]: Error creating hero: ${error}`, token);
@@ -258,6 +283,7 @@ app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 			return res.status(404).end();
 		};
 		writeLog(`[DB]: Updating hero ${name} data with uuid ${uuid}`, token);
+		notifyClients();
 		return res.status(200).json(updatedHero);
 	} catch (error) {
 		writeLog(`[DB]: Error updating hero: ${error}`, token);

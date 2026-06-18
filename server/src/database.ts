@@ -57,6 +57,14 @@ export function dbInitEmpty(db: DatabaseSync): void {
 		)
 	`);
 
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS sessions (
+			token TEXT PRIMARY KEY,
+			email TEXT NOT NULL,
+			expiresAt INTEGER NOT NULL
+		)
+	`);
+
 	const countRow = db.prepare('SELECT COUNT(id) as count FROM heroes').get() as { count: number };
 	if (countRow.count === 0) {
 		debugSeedDatabase(db);
@@ -96,6 +104,25 @@ export function dbUpdateHero(db: DatabaseSync, uuid: string, name: string, attac
 		RETURNING id, uuid, name, special_skill_id, attack, defense, status
 	`);
 	return stmt.get(name, attack, defense, specialSkillId, status, getTimeStamp(), uuid) as Hero | undefined;
+}
+
+export function dbGetSession(db: DatabaseSync, token: string): { email: string, expiresAt: number } | undefined {
+	const stmt = db.prepare('SELECT email, expiresAt FROM sessions WHERE token = ?');
+	return stmt.get(token) as { email: string, expiresAt: number } | undefined;
+}
+
+export function dbCreateOrUpdateSession(db: DatabaseSync, token: string, email: string, expiresAt: number): void {
+	const stmt = db.prepare(`
+		INSERT INTO sessions (token, email, expiresAt)
+		VALUES (?, ?, ?)
+		ON CONFLICT(token) DO UPDATE SET expiresAt = excluded.expiresAt
+	`);
+	stmt.run(token, email, expiresAt);
+}
+
+export function dbDeleteSession(db: DatabaseSync, token: string): void {
+	const stmt = db.prepare('DELETE FROM sessions WHERE token = ?');
+	stmt.run(token);
 }
 
 //Debug

@@ -109,7 +109,7 @@ export class StatusScreenCover extends LitElement {
 	renderStatus(): TemplateResult {
 		switch (this.loadingState) {
 			case STATE_CONNECTING_FAILED:
-				return html`<h2>Unable to connect ❌</h2>`;
+				return html`<h2>Server is currently unavailable 🖥️🔌</h2>`;
 			case STATE_AUTH_EMAIL:
 				return html`
 					<h1>SGG Hero Configurator</h1>

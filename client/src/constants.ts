@@ -12,6 +12,8 @@ export const STATE_FATAL_CLIENT = 11;
 export const STATE_SYNCING_DATA = 12;
 export const STATE_FATAL_VALIDATION = 13;
 
+export const HEARTBEAT_TIMEOUT_SECONDS = 15;
+
 export const MAX_ATTACK_SLIDER_AMOUNT = 100;
 export const MAX_DEFENSE_SLIDER_AMOUNT = 100;
 export const ALLOWED_NAME_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_ 0123456789'.split('');
