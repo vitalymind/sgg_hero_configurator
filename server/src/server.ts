@@ -67,7 +67,7 @@ function writeLog(log: string, token: string = ""): void {
 		const session = activeSessions.get(token);
 		if (session) {user = session.email}
 	}
-	console.log(`${log}, ${user == '' ? 'User email: ' + user : ''}`);
+	console.log(`${log}, ${user !== '' ? 'User email: ' + user : ''}`);
 }
 
 //Init DB if does not exist
