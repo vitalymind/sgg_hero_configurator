@@ -1,0 +1,21 @@
+{
+  "name": "sgg_test",
+  "version": "1.0.0",
+  "scripts": {
+		"dev_server": "docker compose up -d --build"
+	},
+  "keywords": [],
+  "author": "Vitaly",
+  "license": "ISC",
+	"type": "module",
+  "description": "",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}
