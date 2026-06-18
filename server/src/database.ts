@@ -73,6 +73,12 @@ export function dbGetHeroesSince(db: DatabaseSync, timestamp: number): Hero[] {
 	return stmt.all(timestamp) as unknown as Hero[];
 }
 
+export function dbGetActiveUuids(db: DatabaseSync): string[] {
+	const stmt = db.prepare(`SELECT uuid FROM heroes WHERE status = 'active'`);
+	const rows = stmt.all() as { uuid: string }[];
+	return rows.map(r => r.uuid);
+}
+
 export function dbCreateHero(db: DatabaseSync, uuid: string, name: string, attack: number, defense: number, specialSkillId: string): Hero | undefined {
 	const stmt = db.prepare(`
 		INSERT INTO heroes (uuid, name, attack, defense, special_skill_id, last_updated, status) 

@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import crypto from 'crypto';
 import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS, ALLOWED_UUID_CHARACTERS } from './constants.js';
-import { dbCreateHero, dbGetHeroesSince, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString, generateShortUuid } from './database.js';
+import { dbCreateHero, dbGetHeroesSince, dbGetActiveUuids, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString, generateShortUuid } from './database.js';
 
 //Config
 const whitelistedEmails: string[] = ["user@email.com"]
@@ -184,10 +184,12 @@ app.get('/api/heroes', (req: Request, res: Response) => {
 
 	try {
 		const heroes = dbGetHeroesSince(db, lastUpdated);
+		const activeUuids = dbGetActiveUuids(db);
 		writeLog(`[DB]: Fetching ${heroes.length} hero entries, updated since ${lastUpdated} `, token);
 		return res.status(200).json({
 			lastUpdated: getTimeStamp(),
-			heroes: heroes
+			heroes: heroes,
+			activeUuids: activeUuids
 		});
 	} catch (error) {
 		writeLog(`[DB]: Error fetching heroes: ${error}`, token);

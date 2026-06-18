@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state, query } from 'lit/decorators.js';
-import { Hero, LocalStorageCache } from '../interfaces.ts';
+import { Hero, LocalStorageCache, HeroesSyncResponse } from '../interfaces.ts';
 import {
 	LOCAL_STORAGE_CACHE_KEY,
 	STATE_FATAL_NETWORK,
@@ -108,13 +108,26 @@ export class HeroManager extends LitElement {
 		try {
 			const response = await fetch(`/api/heroes?lastUpdated=${this.lastUpdated}`, { credentials: 'include' });
 			if (response.ok) {
-				const data = await response.json();
+				const data = await response.json() as HeroesSyncResponse;
 				this.lastUpdated = data.lastUpdated;
 				for (const hero of data.heroes as Hero[]) {
 					if (hero.uuid) {
 						this.heroesMap.set(hero.uuid, hero);
 					}
 				}
+
+				const validServerUuids = new Set(data.activeUuids);
+				for (const localUuid of this.heroesMap.keys()) {
+					if (!validServerUuids.has(localUuid)) {
+						this.heroesMap.delete(localUuid);
+					}
+				}
+
+				if (this.heroesMap.size === 0 && data.activeUuids && data.activeUuids.length > 0) {
+					this.fetchHeroesClearCache();
+					return;
+				}
+
 				this.saveToCache();
 			} else {
 				if (response.status === 401) {
