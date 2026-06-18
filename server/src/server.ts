@@ -22,7 +22,7 @@ const db = new DatabaseSync(dbPath);
 
 const activeSessions = new Map<string, { email: string, expiresAt: number }>();
 
-function isValidSession(token: string): boolean {
+function isValidSession(token: string, res: Response): boolean {
 	const session = activeSessions.get(token);
 
 	if (!session) {
@@ -35,15 +35,21 @@ function isValidSession(token: string): boolean {
 		return false;
 	}
 
-	refreshSession(token);
+	refreshSession(token, res);
 
 	return true;
 }
 
-function refreshSession(token: string): void {
+function refreshSession(token: string, res: Response): void {
 	const sessionData = activeSessions.get(token);
 	if (sessionData) {
 		sessionData.expiresAt = Date.now() + maxSessionAge;
+		res.cookie('auth_token', token, {
+			httpOnly: true, 
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict',
+			maxAge: maxSessionAge
+		});
 	}
 }
 
@@ -69,7 +75,7 @@ dbInitEmpty(db);
 
 app.get('/api/connect', (req: Request, res: Response) => {
 	const token = req.cookies.auth_token;
-	if (token && isValidSession(token)) {
+	if (token && isValidSession(token, res)) {
 		return res.status(200).end();
 	}
   return res.status(401).end()
@@ -152,7 +158,7 @@ app.post('/api/login/verify', (req: Request, res: Response) => {
 // DB routes
 app.get('/api/heroes', (req: Request, res: Response) => {
 	const token = req.cookies.auth_token;
-	if (!token || !isValidSession(token)) {
+	if (!token || !isValidSession(token, res)) {
 		return res.status(401).end()
 	};
 
@@ -181,7 +187,7 @@ app.get('/api/heroes', (req: Request, res: Response) => {
 
 app.post('/api/heroes', (req: Request, res: Response) => {
 	const token = req.cookies.auth_token;
-	if (!token || !isValidSession(token)) {
+	if (!token || !isValidSession(token, res)) {
 		return res.status(401).end();
 	}
 
@@ -208,7 +214,7 @@ app.post('/api/heroes', (req: Request, res: Response) => {
 
 app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 	const token = req.cookies.auth_token;
-	if (!token || !isValidSession(token)) {
+	if (!token || !isValidSession(token, res)) {
 		return res.status(401).end()
 	};
 
