@@ -5,5 +5,5 @@ export interface Hero {
 	special_skill_id: string;
 	attack: number;
 	defense: number;
-	status: string;
+	status: 'active' | 'deleted';
 }

@@ -190,7 +190,7 @@ app.post('/api/heroes', (req: Request, res: Response) => {
 	}
 
 	const name = sanitizeString(req.body.name, ALLOWED_NAME_CHARACTERS);
-	const specialSkillId = sanitizeString(req.body.specialSkillId, ALLOWED_SPECIAL_ID_CHARACTERS);
+	const specialSkillId = sanitizeString(req.body.special_skill_id, ALLOWED_SPECIAL_ID_CHARACTERS);
 	const attack = parseNumber(req.body.attack);
 	const defense = parseNumber(req.body.defense);
 	
@@ -222,7 +222,7 @@ app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 	};
 
 	const name = sanitizeString(req.body.name, ALLOWED_NAME_CHARACTERS);
-	const specialSkillId = sanitizeString(req.body.specialSkillId, ALLOWED_SPECIAL_ID_CHARACTERS);
+	const specialSkillId = sanitizeString(req.body.special_skill_id, ALLOWED_SPECIAL_ID_CHARACTERS);
 	const attack = parseNumber(req.body.attack);
 	const defense = parseNumber(req.body.defense);
 	const status = req.body.status;
@@ -233,7 +233,7 @@ app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 	}
 
 	if (!name || !specialSkillId || attack === null || defense === null) {
-		writeLog(`[DB]: Validation failed for PUT /api/heroes/:id (data)`, token);
+		writeLog(`[DB]: Validation failed for PUT /api/heroes/:uuid (data)`, token);
 		return res.status(400).json({ error: "Invalid hero data" });
 	}
 
@@ -264,36 +264,36 @@ function debugTestFillDatabase(): void {
 			name: "Lianna",
 			attack: 95,
 			defense: 75,
-			specialSkillId: "perfect_shot"
+			special_skill_id: "perfect_shot"
 		},
 		{
 			name: "Richard",
 			attack: 75,
 			defense: 95,
-			specialSkillId: "frost_strike"
+			special_skill_id: "frost_strike"
 		},
 		{
 			name: "Vivica",
 			attack: 65,
 			defense: 90,
-			specialSkillId: "healing_light"
+			special_skill_id: "healing_light"
 		},
 		{
 			name: "Elena",
 			attack: 90,
 			defense: 70,
-			specialSkillId: "blade_storm"
+			special_skill_id: "blade_storm"
 		},
 		{
 			name: "Sartana",
 			attack: 85,
 			defense: 80,
-			specialSkillId: "death_strike"
+			special_skill_id: "death_strike"
 		}
 	];
 	for (const hero of initialHeroes) {
 		const heroUuid = generateShortUuid();
-		dbCreateHero(db, heroUuid, hero.name, hero.attack, hero.defense, hero.specialSkillId);
+		dbCreateHero(db, heroUuid, hero.name, hero.attack, hero.defense, hero.special_skill_id);
 	}
 }
 //debugTestFillDatabase();
