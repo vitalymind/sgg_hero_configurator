@@ -18,8 +18,11 @@ const port = process.env.PORT || 3000;
 const dbPath = process.env.DB_PATH || path.join(__dirname, '../data/database.sqlite');
 const db = new DatabaseSync(dbPath);
 
-//Simple session handling with http cookie
-
+/*
+	Simple session handling with http cookie.
+	This is just a mock up, sessions should be saved in such a way that
+	they would survive server restart, for exaple in DB
+*/
 const activeSessions = new Map<string, { email: string, expiresAt: number }>();
 
 function isValidSession(token: string, res: Response): boolean {
@@ -53,9 +56,16 @@ function refreshSession(token: string, res: Response): void {
 	}
 }
 
-//Mocking simple OTP flow
-
+/*
+	Simple OTP flow
+	This is just a mock up, OTPs should be properly saved just
+	as sessions are
+*/
 const otpStore = new Map<string, { otp: string, expiresAt: number }>();
+
+function generateOtp(): string {
+	return "123456";
+}
 
 //Logging activity
 
@@ -90,7 +100,7 @@ app.post('/api/login', (req: Request, res: Response) => {
 
 	if (whitelistedEmails.includes(email)) {
 		//Simple mock-up
-		const otp = "123456";
+		const otp = generateOtp();
 		const expiresAt = Date.now() + 5 * 60 * 1000;
 		otpStore.set(email, { otp, expiresAt });
 
