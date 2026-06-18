@@ -1,9 +1,11 @@
 import { DatabaseSync } from "node:sqlite";
 import { Hero } from "./interfaces.js";
+import { MAX_NUMERIC_VALUE, MIN_NUMERIC_VALUE, MAX_NAME_LENGHT } from "./constants.js";
 
 // Data sanitization
 export function sanitizeString(input: any, allowedChars: string[]): string | null {
 	if (typeof input !== 'string') {return null};
+	if (input.length > MAX_NAME_LENGHT) {return null};
 	const allowedSet = new Set(allowedChars);
 	for (const char of input) {
 		if (!allowedSet.has(char)) {return null}
@@ -12,11 +14,18 @@ export function sanitizeString(input: any, allowedChars: string[]): string | nul
 }
 
 export function parseNumber(input: any): number | null {
+	let val: number | null = null;
 	if (typeof input === 'number') {
-		return Math.floor(input)
+		val = Math.floor(input);
 	} else if (typeof input === 'string') {
 		const parsed = parseInt(input, 10);
-		if (!isNaN(parsed)) {return parsed}
+		if (!isNaN(parsed)) {val = parsed;}
+	}
+	if (val !== null) {
+		if (val < MIN_NUMERIC_VALUE || val > MAX_NUMERIC_VALUE) {
+			return null;
+		}
+		return val;
 	}
 	return null;
 }

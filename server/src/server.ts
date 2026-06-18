@@ -38,7 +38,7 @@ function isValidSession(token: string): boolean {
 	}
 
 	if (Date.now() > session.expiresAt) {
-		writeLog(`[AUTH]: Session with ${session.email} has expired, re-login requierd`);
+		writeLog(`[AUTH]: Session with ${session.email} has expired, re-login required`);
 		activeSessions.delete(token);
 		return false;
 	}
@@ -196,7 +196,7 @@ app.post('/api/heroes', (req: Request, res: Response) => {
 	
 	if (!name || !specialSkillId || attack === null || defense === null) {
 		writeLog(`[DB]: Validation failed for POST /api/heroes`, token);
-		return res.status(400).json({ error: "Invalid hero data" });
+		return res.status(400).json({ error: "invalid_hero_data" });
 	}
 
 	try {
