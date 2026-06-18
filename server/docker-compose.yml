@@ -8,5 +8,8 @@ services:
       - TZ=Europe/Helsinki
       - DB_PATH=/app/data/database.sqlite
     volumes:
-      - ./data:/app/data
+      - db_data:/app/data
     restart: unless-stopped
+
+volumes:
+  db_data:
