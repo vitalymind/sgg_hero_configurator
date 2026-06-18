@@ -1,7 +1,14 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Hero } from '../interfaces.ts';
-import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS, MAX_ATTACK_SLIDER_AMOUNT, MAX_DEFENSE_SLIDER_AMOUNT, MAX_ATTACK_DEFENSE_VALUE } from '../constants.ts';
+import {
+	ALLOWED_NAME_CHARACTERS,
+	ALLOWED_SPECIAL_ID_CHARACTERS,
+	MAX_ATTACK_SLIDER_AMOUNT,
+	MAX_DEFENSE_SLIDER_AMOUNT,
+	MAX_ATTACK_DEFENSE_VALUE,
+	MAX_STRING_LENGHT
+} from '../constants.ts';
 import { modalBackdropStyle, modalContainerStyle, inputStyle } from '../common_styles.ts';
 
 @customElement('hero-form-dialog')
@@ -124,11 +131,17 @@ export class HeroFormDialog extends LitElement {
 		if (!this.name) {
 			return false;
 		}
+		if (this.name.length > MAX_STRING_LENGHT) {
+			return false;
+		}
 		return this.name.split('').every(char => ALLOWED_NAME_CHARACTERS.includes(char));
 	}
 
 	private isSpecialSkillValid() {
 		if (!this.special_skill_id) {
+			return false;
+		}
+		if (this.special_skill_id.length > MAX_STRING_LENGHT) {
 			return false;
 		}
 		return this.special_skill_id.split('').every(char => ALLOWED_SPECIAL_ID_CHARACTERS.includes(char));

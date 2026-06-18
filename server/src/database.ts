@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { Hero } from "./interfaces.js";
-import { MAX_NUMERIC_VALUE, MIN_NUMERIC_VALUE, MAX_NAME_LENGHT } from "./constants.js";
+import { MAX_NUMERIC_VALUE, MIN_NUMERIC_VALUE, MAX_STRING_LENGTH } from "./constants.js";
 import crypto from 'crypto';
 
 export function generateShortUuid(): string {
@@ -13,7 +13,7 @@ export function generateShortUuid(): string {
 // Data sanitization
 export function sanitizeString(input: any, allowedChars: string[]): string | null {
 	if (typeof input !== 'string') {return null};
-	if (input.length > MAX_NAME_LENGHT) {return null};
+	if (input.length > MAX_STRING_LENGTH) {return null};
 	const allowedSet = new Set(allowedChars);
 	for (const char of input) {
 		if (!allowedSet.has(char)) {return null}

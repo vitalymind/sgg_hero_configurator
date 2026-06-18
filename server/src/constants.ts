@@ -4,4 +4,4 @@ export const ALLOWED_UUID_CHARACTERS = '0123456789abcdefghijklmnopqrstuvwxyz-'.s
 
 export const MAX_NUMERIC_VALUE = 1000;
 export const MIN_NUMERIC_VALUE = 0;
-export const MAX_NAME_LENGHT = 50;
+export const MAX_STRING_LENGTH = 50;
