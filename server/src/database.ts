@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { Hero } from "./interfaces";
+import { Hero } from "./interfaces.js";
 
 // Data sanitization
 export function sanitizeString(input: any, allowedChars: string[]): string | null {
@@ -49,10 +49,9 @@ export function dbCreateHero(db: DatabaseSync, name: string, attack: number, def
 	const stmt = db.prepare(`
 		INSERT INTO heroes (name, attack, defense, special_skill_id, last_updated, status) 
 		VALUES (?, ?, ?, ?, ?, 'active')
+		RETURNING id, name, special_skill_id, attack, defense, status
 	`);
-	stmt.run(name, attack, defense, specialSkillId, getTimeStamp());
-	const getStmt = db.prepare('SELECT id, name, special_skill_id, attack, defense, status FROM heroes WHERE id = last_insert_rowid()');
-	return getStmt.get() as Hero | undefined;
+	return stmt.get(name, attack, defense, specialSkillId, getTimeStamp()) as Hero | undefined;
 }
 
 export function dbUpdateHero(db: DatabaseSync, id: number, name: string, attack: number, defense: number, specialSkillId: string, status: string): Hero | undefined {
@@ -60,9 +59,7 @@ export function dbUpdateHero(db: DatabaseSync, id: number, name: string, attack:
 		UPDATE heroes
 		SET name = ?, attack = ?, defense = ?, special_skill_id = ?, status = ?, last_updated = ?
 		WHERE id = ?
+		RETURNING id, name, special_skill_id, attack, defense, status
 	`);
-	stmt.run(name, attack, defense, specialSkillId, status, getTimeStamp(), id);
-	
-	const getStmt = db.prepare('SELECT id, name, special_skill_id, attack, defense, status FROM heroes WHERE id = ?');
-	return getStmt.get(id) as Hero | undefined;
+	return stmt.get(name, attack, defense, specialSkillId, status, getTimeStamp(), id) as Hero | undefined;
 }

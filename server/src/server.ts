@@ -3,11 +3,11 @@ import { DatabaseSync } from 'node:sqlite';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import crypto from 'crypto';
-import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS } from './constants';
-import { dbCreateHero, dbGetHeroesSince, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString } from './database';
+import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS } from './constants.js';
+import { dbCreateHero, dbGetHeroesSince, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString } from './database.js';
 
 //Config
-const whitelistedEmails: String[] = ["user@email.com"]
+const whitelistedEmails: string[] = ["user@email.com"]
 const maxSessionAge = 10 * 60 * 1000;
 
 //Init
@@ -53,7 +53,7 @@ const otpStore = new Map<string, { otp: string, expiresAt: number }>();
 
 //Logging activity
 
-function writeLog(log: String, token: string = ""): void {
+function writeLog(log: string, token: string = ""): void {
 	var user = "";
 	if (token !== "") {
 		const session = activeSessions.get(token);
