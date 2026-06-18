@@ -1,9 +1,10 @@
 import express, { Request, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import path from 'path';
 import crypto from 'crypto';
-import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS, ALLOWED_UUID_CHARACTERS, HEARTBEAT_SEND_RATE_SECONDS, SESSION_LENGTH_MINUTES } from './constants.js';
+import { ALLOWED_CORS_DOMAIN, ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS, ALLOWED_UUID_CHARACTERS, HEARTBEAT_SEND_RATE_SECONDS, SESSION_LENGTH_MINUTES } from './constants.js';
 import { dbCreateHero, dbGetHeroesSince, dbGetActiveUuids, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString, generateShortUuid, dbGetSession, dbCreateOrUpdateSession, dbDeleteSession } from './database.js';
 
 //Config
@@ -12,6 +13,12 @@ const maxSessionAge = SESSION_LENGTH_MINUTES * 60 * 1000;
 
 //Init
 const app = express();
+
+app.use(cors({
+	origin: ALLOWED_CORS_DOMAIN,
+	credentials: true
+}));
+
 app.use(express.json());
 app.use(cookieParser())
 const port = process.env.PORT || 3000;
