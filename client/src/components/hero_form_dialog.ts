@@ -159,8 +159,8 @@ export class HeroFormDialog extends LitElement {
 			this.attack = maxed;
 			this.lastValidAttack = maxed.toString();
 			
-			if (val !== this.lastValidDefense) {
-				input.value = this.lastValidDefense;
+			if (val !== this.lastValidAttack) {
+				input.value = this.lastValidAttack;
 			}
 		} else {
 			input.value = this.lastValidAttack;
@@ -170,13 +170,11 @@ export class HeroFormDialog extends LitElement {
 	private handleDefenseInput(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const val = input.value;
-
 		if (val === '') {
 			this.defense = 0;
 			this.lastValidDefense = '0';
 			return;
 		}
-
 		if (/^\d+$/.test(val)) {
 			const maxed = Math.min(MAX_ATTACK_DEFENSE_VALUE, parseInt(val, 10));
 			this.defense = maxed;
@@ -186,7 +184,6 @@ export class HeroFormDialog extends LitElement {
 				input.value = this.lastValidDefense;
 			}
 		} else {
-
 			input.value = this.lastValidDefense;
 		}
 	}
