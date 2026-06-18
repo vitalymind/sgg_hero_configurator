@@ -87,7 +87,7 @@ app.post('/api/login', (req: Request, res: Response) => {
 	const { email } = req.body;
 	if (!email || typeof email !== 'string') {
 		writeLog(`[AUTH]: login with invalid email ${email}`);
-		return res.status(400).json({ error: "Valid email is required" });
+		return res.status(400).end();
 	}
 
 	if (whitelistedEmails.includes(email)) {
@@ -164,7 +164,11 @@ app.get('/api/heroes', (req: Request, res: Response) => {
 		return res.status(401).end()
 	};
 
-	const lastUpdated = parseNumber(req.query.lastUpdated);
+	const lastUpdated = Number(req.query.lastUpdated);
+
+	if (isNaN(lastUpdated)) {
+		return res.status(400).end();
+	}
 	
 	if (lastUpdated === null) {
 		return res.status(400).end();
@@ -196,7 +200,7 @@ app.post('/api/heroes', (req: Request, res: Response) => {
 	
 	if (!name || !specialSkillId || attack === null || defense === null) {
 		writeLog(`[DB]: Validation failed for POST /api/heroes`, token);
-		return res.status(400).json({ error: "invalid_hero_data" });
+		return res.status(422).end();
 	}
 
 	try {
@@ -218,7 +222,7 @@ app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 
 	const uuid = sanitizeString(req.params.uuid, ALLOWED_UUID_CHARACTERS);
 	if (uuid === null) {
-		return res.status(400).json({ error: "Invalid UUID parameter" })
+		return res.status(400).end();
 	};
 
 	const name = sanitizeString(req.body.name, ALLOWED_NAME_CHARACTERS);
@@ -229,12 +233,12 @@ app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 	
 	if (status !== 'active' && status !== 'deleted') {
 		writeLog(`[DB]: Validation failed for PUT /api/heroes/:uuid (status)`, token);
-		return res.status(400).json({ error: "Invalid status parameter" });
+		return res.status(400).end();
 	}
 
 	if (!name || !specialSkillId || attack === null || defense === null) {
 		writeLog(`[DB]: Validation failed for PUT /api/heroes/:uuid (data)`, token);
-		return res.status(400).json({ error: "Invalid hero data" });
+		return res.status(422).end();
 	}
 
 	try {
