@@ -171,14 +171,14 @@ app.get('/api/heroes', (req: Request, res: Response) => {
 	if (!token || !isValidSession(token, res)) {
 		return res.status(401).end()
 	};
+	
+	if (req.query.lastUpdated === null) {
+		return res.status(400).end();
+	}
 
 	const lastUpdated = Number(req.query.lastUpdated);
 
 	if (isNaN(lastUpdated)) {
-		return res.status(400).end();
-	}
-	
-	if (lastUpdated === null) {
 		return res.status(400).end();
 	}
 

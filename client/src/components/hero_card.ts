@@ -22,7 +22,7 @@ export class HeroCard extends LitElement {
 				cursor: pointer;
 				box-sizing: border-box;
 			}
-			.card:hover:not(:has(.delete:hover)) {
+			.card:hover {
 				background: #f0f0f0;
 			}
 			.header {

@@ -7,7 +7,7 @@ import {
 	MAX_ATTACK_SLIDER_AMOUNT,
 	MAX_DEFENSE_SLIDER_AMOUNT,
 	MAX_ATTACK_DEFENSE_VALUE,
-	MAX_STRING_LENGHT
+	MAX_STRING_LENGTH
 } from '../constants.ts';
 import { modalBackdropStyle, modalContainerStyle, inputStyle } from '../common_styles.ts';
 
@@ -131,7 +131,7 @@ export class HeroFormDialog extends LitElement {
 		if (!this.name) {
 			return false;
 		}
-		if (this.name.length > MAX_STRING_LENGHT) {
+		if (this.name.length > MAX_STRING_LENGTH) {
 			return false;
 		}
 		return this.name.split('').every(char => ALLOWED_NAME_CHARACTERS.includes(char));
@@ -141,7 +141,7 @@ export class HeroFormDialog extends LitElement {
 		if (!this.special_skill_id) {
 			return false;
 		}
-		if (this.special_skill_id.length > MAX_STRING_LENGHT) {
+		if (this.special_skill_id.length > MAX_STRING_LENGTH) {
 			return false;
 		}
 		return this.special_skill_id.split('').every(char => ALLOWED_SPECIAL_ID_CHARACTERS.includes(char));

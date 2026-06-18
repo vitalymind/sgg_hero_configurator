@@ -19,4 +19,4 @@ export const ALLOWED_SPECIAL_ID_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz01234567
 export const LOCAL_STORAGE_CACHE_KEY = 'hero_manager_cache';
 
 export const MAX_ATTACK_DEFENSE_VALUE = 1000;
-export const MAX_STRING_LENGHT = 50;
+export const MAX_STRING_LENGTH = 50;
