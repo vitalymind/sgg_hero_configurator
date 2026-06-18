@@ -3,7 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import crypto from 'crypto';
-import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS } from './constants.js';
+import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS, ALLOWED_UUID_CHARACTERS } from './constants.js';
 import { dbCreateHero, dbGetHeroesSince, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString } from './database.js';
 
 //Config
@@ -17,6 +17,14 @@ app.use(cookieParser())
 const port = process.env.PORT || 3000;
 const dbPath = process.env.DB_PATH || path.join(__dirname, '../data/database.sqlite');
 const db = new DatabaseSync(dbPath);
+
+//Helpers
+function generateShortUuid(): string {
+	const timePart = Date.now().toString(36);
+	const randomPart = crypto.randomBytes(4).toString('hex');
+	 const rawId = timePart + randomPart;
+	 return rawId.match(/.{1,4}/g)?.join('-') || rawId;
+}
 
 //Simple session handling with http cookie
 
@@ -63,7 +71,7 @@ function writeLog(log: string, token: string = ""): void {
 }
 
 //Init DB if does not exist
-dbInitEmpty(db)
+dbInitEmpty(db);
 
 //Auth routes
 
@@ -164,6 +172,7 @@ app.get('/api/heroes', (req: Request, res: Response) => {
 
 	try {
 		const heroes = dbGetHeroesSince(db, lastUpdated);
+		writeLog(`[DB]: Fetching ${heroes.length} hero entries, updated since ${lastUpdated} `, token);
 		return res.status(200).json({
 			lastUpdated: getTimeStamp(),
 			heroes: heroes
@@ -191,7 +200,9 @@ app.post('/api/heroes', (req: Request, res: Response) => {
 	}
 
 	try {
-		const newHero = dbCreateHero(db, name, attack, defense, specialSkillId);
+		const heroUuid = generateShortUuid();
+		const newHero = dbCreateHero(db, heroUuid, name, attack, defense, specialSkillId);
+		writeLog(`[DB]: Creating hero ${name} data with uuid ${heroUuid}`, token);
 		return res.status(200).json(newHero);
 	} catch (error) {
 		writeLog(`[DB]: Error creating hero: ${error}`, token);
@@ -199,15 +210,15 @@ app.post('/api/heroes', (req: Request, res: Response) => {
 	}
 });
 
-app.put('/api/heroes/:id', (req: Request, res: Response) => {
+app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 	const token = req.cookies.auth_token;
 	if (!token || !isValidSession(token)) {
 		return res.status(401).end()
 	};
 
-	const id = parseNumber(req.params.id);
-	if (id === null) {
-		return res.status(400).json({ error: "Invalid ID parameter" })
+	const uuid = sanitizeString(req.params.uuid, ALLOWED_UUID_CHARACTERS);
+	if (uuid === null) {
+		return res.status(400).json({ error: "Invalid UUID parameter" })
 	};
 
 	const name = sanitizeString(req.body.name, ALLOWED_NAME_CHARACTERS);
@@ -217,7 +228,7 @@ app.put('/api/heroes/:id', (req: Request, res: Response) => {
 	const status = req.body.status;
 	
 	if (status !== 'active' && status !== 'deleted') {
-		writeLog(`[DB]: Validation failed for PUT /api/heroes/:id (status)`, token);
+		writeLog(`[DB]: Validation failed for PUT /api/heroes/:uuid (status)`, token);
 		return res.status(400).json({ error: "Invalid status parameter" });
 	}
 
@@ -227,10 +238,12 @@ app.put('/api/heroes/:id', (req: Request, res: Response) => {
 	}
 
 	try {
-		const updatedHero = dbUpdateHero(db, id, name, attack, defense, specialSkillId, status);
+		const updatedHero = dbUpdateHero(db, uuid, name, attack, defense, specialSkillId, status);
 		if (!updatedHero) {
-			return res.status(404).json({ error: "Hero not found" })
+			writeLog(`[DB]: Failed to update hero ${name} data with uuid ${uuid}. Reason: Failed to find hero entry.`, token);
+			return res.status(404).end();
 		};
+		writeLog(`[DB]: Updating hero ${name} data with uuid ${uuid}`, token);
 		return res.status(200).json(updatedHero);
 	} catch (error) {
 		writeLog(`[DB]: Error updating hero: ${error}`, token);
@@ -243,3 +256,44 @@ app.put('/api/heroes/:id', (req: Request, res: Response) => {
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
+
+//Debug
+function debugTestFillDatabase(): void {
+	const initialHeroes = [
+		{
+			name: "Lianna",
+			attack: 95,
+			defense: 75,
+			specialSkillId: "perfect_shot"
+		},
+		{
+			name: "Richard",
+			attack: 75,
+			defense: 95,
+			specialSkillId: "frost_strike"
+		},
+		{
+			name: "Vivica",
+			attack: 65,
+			defense: 90,
+			specialSkillId: "healing_light"
+		},
+		{
+			name: "Elena",
+			attack: 90,
+			defense: 70,
+			specialSkillId: "blade_storm"
+		},
+		{
+			name: "Sartana",
+			attack: 85,
+			defense: 80,
+			specialSkillId: "death_strike"
+		}
+	];
+	for (const hero of initialHeroes) {
+		const heroUuid = generateShortUuid();
+		dbCreateHero(db, heroUuid, hero.name, hero.attack, hero.defense, hero.specialSkillId);
+	}
+}
+//debugTestFillDatabase();

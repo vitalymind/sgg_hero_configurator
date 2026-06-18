@@ -1,2 +1,3 @@
 export const ALLOWED_NAME_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_ 0123456789'.split('');
 export const ALLOWED_SPECIAL_ID_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz0123456789-_'.split('');
+export const ALLOWED_UUID_CHARACTERS = '0123456789abcdefghijklmnopqrstuvwxyz-'.split('');
