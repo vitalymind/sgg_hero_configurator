@@ -8,8 +8,10 @@ import { ALLOWED_CORS_DOMAIN, ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARAC
 import { dbCreateHero, dbGetHeroesSince, dbGetActiveUuids, dbInitEmpty, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString, generateShortUuid, dbGetSession, dbCreateOrUpdateSession, dbDeleteSession } from './database.js';
 
 //Config
-const whitelistedEmails: string[] = ["user@email.com", "user2@email.com"]
 const maxSessionAge = SESSION_LENGTH_MINUTES * 60 * 1000;
+
+//Mockup auth configuration
+const whitelistedEmails: string[] = ["user@email.com", "user2@email.com"]
 
 //Init
 const app = express();
@@ -203,7 +205,7 @@ app.get('/api/heroes', (req: Request, res: Response) => {
 		return res.status(401).end()
 	};
 	
-	if (req.query.lastUpdated === null) {
+	if (req.query.lastUpdated === null || req.query.lastUpdated === undefined) {
 		return res.status(400).end();
 	}
 

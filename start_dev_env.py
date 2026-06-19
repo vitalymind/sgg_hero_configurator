@@ -14,6 +14,7 @@ def main():
     subprocess.run('npm install', cwd=client_dir, shell=True, check=True)
 
     print("🏗️  Building and Starting Server container (this may take a moment)...")
+    if not os.path.exists(os.path.join(server_dir, '.env')): open(os.path.join(server_dir, '.env'), 'a').close()
     subprocess.run('npm run dev_server', cwd=server_dir, shell=True, check=True)
 
     print("🚀 Starting Vite Client...")

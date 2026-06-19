@@ -3,6 +3,7 @@ import { Hero } from "./interfaces.js";
 import { MAX_NUMERIC_VALUE, MIN_NUMERIC_VALUE, MAX_STRING_LENGTH } from "./constants.js";
 import crypto from 'crypto';
 
+//Generate short (for better UI), but still strongly unique UUID
 export function generateShortUuid(): string {
 	const timePart = Date.now().toString(36);
 	const randomPart = crypto.randomBytes(4).toString('hex');
