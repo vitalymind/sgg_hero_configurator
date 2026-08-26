@@ -4,8 +4,8 @@ import './components/hero_manager.ts';
 
 import { LitElement, html } from 'lit';
 import { customElement, state, query } from 'lit/decorators.js';
-import { 
-	STATE_CONNECTING_FAILED, 
+import {
+	STATE_CONNECTING_FAILED,
 	STATE_CONNECTING_INIT,
 	STATE_AUTH_EMAIL,
 	STATE_AUTH_SENDING_OTP,
@@ -43,8 +43,8 @@ export class HeroConfigurator extends LitElement {
 	}
 
 	private clean() {
-		if (this.manager) {this.manager.clean()};
-		if (this.statusCover) {this.statusCover.clean()};
+		if (this.manager) { this.manager.clean() };
+		if (this.statusCover) { this.statusCover.clean() };
 	}
 
 	private restartApp() {
@@ -68,7 +68,7 @@ export class HeroConfigurator extends LitElement {
 			} else {
 				this.loadingState = STATE_CONNECTING_FAILED;
 			}
-		} catch(error: unknown) {
+		} catch (error: unknown) {
 			this.loadingState = STATE_CONNECTING_FAILED;
 			if (error instanceof Error) {
 				console.error(error.message);
@@ -81,14 +81,14 @@ export class HeroConfigurator extends LitElement {
 	private async handleSendOtp(e: CustomEvent) {
 		this.loadingState = STATE_AUTH_SENDING_OTP;
 		const email = e.detail.email;
-		
+
 		try {
 			await fetch(`${API_BASE_URL}/api/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email })
 			});
-			
+
 			this.loadingState = STATE_AUTH_OTP;
 		} catch (error) {
 			console.error("Failed to send OTP", error);
@@ -99,15 +99,15 @@ export class HeroConfigurator extends LitElement {
 	private async handleVerifyOtp(e: CustomEvent) {
 		this.loadingState = STATE_AUTH_VERIFYING;
 		const { email, otp } = e.detail;
-		
+
 		try {
 			const result = await fetch(`${API_BASE_URL}/api/login/verify`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, otp })
 			});
-			
-			if (result.ok) { 
+
+			if (result.ok) {
 				this.showStatusCover = false;
 			} else {
 				this.loadingState = STATE_AUTH_FAILED;

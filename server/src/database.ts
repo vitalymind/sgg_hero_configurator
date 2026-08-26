@@ -7,17 +7,17 @@ import crypto from 'crypto';
 export function generateShortUuid(): string {
 	const timePart = Date.now().toString(36);
 	const randomPart = crypto.randomBytes(4).toString('hex');
-	 const rawId = timePart + randomPart;
-	 return rawId.match(/.{1,4}/g)?.join('-') || rawId;
+	const rawId = timePart + randomPart;
+	return rawId.match(/.{1,4}/g)?.join('-') || rawId;
 }
 
 // Data sanitization
 export function sanitizeString(input: any, allowedChars: string[]): string | null {
-	if (typeof input !== 'string') {return null};
-	if (input.length > MAX_STRING_LENGTH) {return null};
+	if (typeof input !== 'string') { return null };
+	if (input.length > MAX_STRING_LENGTH) { return null };
 	const allowedSet = new Set(allowedChars);
 	for (const char of input) {
-		if (!allowedSet.has(char)) {return null}
+		if (!allowedSet.has(char)) { return null }
 	}
 	return input;
 }
@@ -28,7 +28,7 @@ export function parseNumber(input: any): number | null {
 		val = Math.floor(input);
 	} else if (typeof input === 'string') {
 		const parsed = parseInt(input, 10);
-		if (!isNaN(parsed)) {val = parsed;}
+		if (!isNaN(parsed)) { val = parsed; }
 	}
 	if (val !== null) {
 		if (val < MIN_NUMERIC_VALUE || val > MAX_NUMERIC_VALUE) {

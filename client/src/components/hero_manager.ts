@@ -93,7 +93,7 @@ export class HeroManager extends LitElement {
 			this.eventSource.close();
 		}
 		this.eventSource = new EventSource(`${API_BASE_URL}/api/heroes/stream`);
-		
+
 		this.eventSource.onmessage = (e) => {
 			this.resetPingTimeout();
 			if (e.data === 'update') {

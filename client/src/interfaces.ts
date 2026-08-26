@@ -9,12 +9,12 @@ export interface Hero {
 }
 
 export interface HeroesSyncResponse {
-    lastUpdated: number;
-    heroes: Hero[];
-    activeUuids: string[];
+	lastUpdated: number;
+	heroes: Hero[];
+	activeUuids: string[];
 }
 
 export interface LocalStorageCache {
-    lastUpdated: number;
-    heroes: Hero[];
+	lastUpdated: number;
+	heroes: Hero[];
 }

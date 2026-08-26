@@ -171,7 +171,7 @@ export class HeroFormDialog extends LitElement {
 			const maxed = Math.min(MAX_ATTACK_DEFENSE_VALUE, parseInt(val, 10));
 			this.attack = maxed;
 			this.lastValidAttack = maxed.toString();
-			
+
 			if (val !== this.lastValidAttack) {
 				input.value = this.lastValidAttack;
 			}
@@ -192,7 +192,7 @@ export class HeroFormDialog extends LitElement {
 			const maxed = Math.min(MAX_ATTACK_DEFENSE_VALUE, parseInt(val, 10));
 			this.defense = maxed;
 			this.lastValidDefense = maxed.toString();
-			
+
 			if (val !== this.lastValidDefense) {
 				input.value = this.lastValidDefense;
 			}
@@ -262,15 +262,14 @@ export class HeroFormDialog extends LitElement {
 		return html`
 			<div class="modal-backdrop">
 				<div class="modal-container">
-					${
-						this.editingHero ?
-						html`
+					${this.editingHero ?
+				html`
 						<h1>Edit Hero</h1>
 						<span class="uuid-span">uuid: ${this.editingHero.uuid}
 							<span class="uuid-span-copy" @click="${() => navigator.clipboard.writeText(this.editingHero ? this.editingHero.uuid! : '')}">📋</span>
 						</span>` :
-						html`<h1>Add New Hero</h1>`
-					}
+				html`<h1>Add New Hero</h1>`
+			}
 
 					<div class="form-group">
 						<label>Name</label>

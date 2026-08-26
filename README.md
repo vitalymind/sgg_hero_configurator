@@ -9,6 +9,14 @@ into a static HTML bundle to be hosted on a CDN.
 - **Client (Frontend)**: Lit (Web Components framework), TypeScript, Vite (Bundler).
 - **Server (Backend)**: Node.js, Express, TypeScript, SQLite (node:sqlite), Docker.
 
+## Notable features
+- **Real-Time Synchronization (SSE)**: Uses Server-Sent Events (`/api/heroes/stream`) to broadcast data change notifications to all connected clients, backed by a 10-second heartbeat ping with client-side disconnect detection.
+- **Incremental Delta Sync & Reconciliation**: Queries only heroes updated since the client's last timestamp (`?lastUpdated=...`) and reconciles active UUIDs to handle additions, updates, and deletions with minimal network overhead.
+- **Client-Side Caching (LocalStorage)**: Persists hero data to the browser's `localStorage` for fast application startup, followed by background synchronization with the server.
+- **Lightweight Web Components (Lit + TypeScript)**: Native Web Components without bloated framework like React
+- **Data Validation & Sanitization**: Character whitelisting, string length checks, and numeric boundary constraints enforced on both client and server.
+- **Zero-Dependency Native SQLite**: Uses Node 22 native `node:sqlite` (`DatabaseSync`) without native compilation dependencies.
+
 ## How to Build for Local Development
 
 ### Requirements

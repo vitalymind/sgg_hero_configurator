@@ -8,7 +8,7 @@ export class HeroList extends LitElement {
 	@property({ type: Array }) heroes: Hero[] = [];
 	@property({ type: String }) filterQuery = '';
 
-	clean(): void {}
+	clean(): void { }
 
 	static styles = css`
 		:host {

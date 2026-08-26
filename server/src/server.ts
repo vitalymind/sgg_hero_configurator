@@ -52,7 +52,7 @@ function refreshSession(token: string, res: Response): void {
 		sessionData.expiresAt = Date.now() + maxSessionAge;
 		dbCreateOrUpdateSession(db, token, sessionData.email, sessionData.expiresAt);
 		res.cookie('auth_token', token, {
-			httpOnly: true, 
+			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'strict',
 			maxAge: maxSessionAge
@@ -74,10 +74,10 @@ function generateOtp(): string {
 //Logging activity
 
 function writeLog(log: string, token: string = ""): void {
-	var user = "";
+	let user = "";
 	if (token !== "") {
 		const session = dbGetSession(db, token);
-		if (session) {user = session.email}
+		if (session) { user = session.email }
 	}
 	console.log(`${log}, ${user !== '' ? 'User email: ' + user : ''}`);
 }
@@ -92,7 +92,7 @@ app.get('/api/connect', (req: Request, res: Response) => {
 	if (token && isValidSession(token, res)) {
 		return res.status(200).end();
 	}
-  return res.status(401).end()
+	return res.status(401).end()
 });
 
 app.post('/api/login', (req: Request, res: Response) => {
@@ -156,7 +156,7 @@ app.post('/api/login/verify', (req: Request, res: Response) => {
 	const sessionToken = crypto.randomUUID();
 	dbCreateOrUpdateSession(db, sessionToken, email, Date.now() + maxSessionAge);
 	res.cookie('auth_token', sessionToken, {
-		httpOnly: true, 
+		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
 		sameSite: 'strict',
 		maxAge: maxSessionAge
@@ -204,7 +204,7 @@ app.get('/api/heroes', (req: Request, res: Response) => {
 	if (!token || !isValidSession(token, res)) {
 		return res.status(401).end()
 	};
-	
+
 	if (req.query.lastUpdated === null || req.query.lastUpdated === undefined) {
 		return res.status(400).end();
 	}
@@ -240,7 +240,7 @@ app.post('/api/heroes', (req: Request, res: Response) => {
 	const specialSkillId = sanitizeString(req.body.special_skill_id, ALLOWED_SPECIAL_ID_CHARACTERS);
 	const attack = parseNumber(req.body.attack);
 	const defense = parseNumber(req.body.defense);
-	
+
 	if (!name || !specialSkillId || attack === null || defense === null) {
 		writeLog(`[DB]: Validation failed for POST /api/heroes`, token);
 		return res.status(422).end();
@@ -274,7 +274,7 @@ app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 	const attack = parseNumber(req.body.attack);
 	const defense = parseNumber(req.body.defense);
 	const status = req.body.status;
-	
+
 	if (status !== 'active' && status !== 'deleted') {
 		writeLog(`[DB]: Validation failed for PUT /api/heroes/:uuid (status)`, token);
 		return res.status(400).end();
@@ -303,5 +303,5 @@ app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 //Start listening
 
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+	console.log(`Server is running at http://localhost:${port}`);
 });
