@@ -95,16 +95,22 @@ export class HeroConfigurator extends LitElement {
 		const email = e.detail.email;
 
 		try {
-			await fetch(`${API_BASE_URL}/api/login`, {
+			const res = await fetch(`${API_BASE_URL}/api/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email })
 			});
 
-			this.loadingState = STATE_AUTH_OTP;
+			if (res.ok) {
+				this.loadingState = STATE_AUTH_OTP;
+			} else if (res.status >= 500) {
+				this.loadingState = STATE_FATAL_SERVER;
+			} else {
+				this.loadingState = STATE_AUTH_FAILED;
+			}
 		} catch (error) {
 			console.error("Failed to send OTP", error);
-			this.loadingState = STATE_AUTH_EMAIL;
+			this.loadingState = STATE_FATAL_NETWORK;
 		}
 	}
 

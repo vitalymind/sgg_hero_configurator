@@ -149,14 +149,10 @@ export class HeroManager extends LitElement {
 	private clearCache() {
 		this.lastUpdated = 0;
 		this.heroesMap.clear();
-		const data: LocalStorageCache = {
-			lastUpdated: this.lastUpdated,
-			heroes: []
-		};
 		try {
-			localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(data));
+			localStorage.removeItem(LOCAL_STORAGE_CACHE_KEY);
 		} catch (e) {
-			console.error("Failed to clear cache", e);
+			console.warn("Failed to clear cache from localStorage", e);
 		}
 	}
 
