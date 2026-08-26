@@ -179,12 +179,32 @@ export class HeroManager extends LitElement {
 		if (!silent) {
 			this.isSyncing = true;
 		}
+
+		let response: Response;
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/heroes?lastUpdated=${this.lastUpdated}`, { credentials: 'include' });
+			response = await fetch(`${API_BASE_URL}/api/heroes?lastUpdated=${this.lastUpdated}`, { credentials: 'include' });
+		} catch (networkError) {
+			console.error("Network error fetching heroes:", networkError);
+			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
+			if (!silent) {
+				this.isSyncing = false;
+			}
+			return;
+		}
+
+		try {
 			if (response.ok) {
-				const data = await response.json() as HeroesSyncResponse;
+				let data: HeroesSyncResponse;
+				try {
+					data = await response.json() as HeroesSyncResponse;
+				} catch (parseError) {
+					console.error("JSON parsing error on heroes response:", parseError);
+					this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_SERVER }));
+					return;
+				}
+
 				this.lastUpdated = data.lastUpdated;
-				for (const hero of data.heroes as Hero[]) {
+				for (const hero of data.heroes) {
 					if (hero.uuid) {
 						this.heroesMap.set(hero.uuid, hero);
 					}
@@ -197,7 +217,7 @@ export class HeroManager extends LitElement {
 					}
 				}
 
-				if (this.heroesMap.size === 0 && data.activeUuids && data.activeUuids.length > 0) {
+				if (this.heroesMap.size === 0 && data.activeUuids.length > 0) {
 					this.fetchHeroesClearCache(silent);
 					return;
 				}
@@ -213,8 +233,8 @@ export class HeroManager extends LitElement {
 				}
 			}
 		} catch (e) {
-			console.error("Failed to fetch heroes", e);
-			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
+			console.error("Unexpected error processing heroes data:", e);
+			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_CLIENT }));
 		} finally {
 			if (!silent) {
 				this.isSyncing = false;
@@ -256,21 +276,36 @@ export class HeroManager extends LitElement {
 
 	private async saveHeroDataToServer(heroData: Hero) {
 		this.isSyncing = true;
+		const method = heroData.uuid !== null ? 'PUT' : 'POST';
+		const url = heroData.uuid !== null ? `${API_BASE_URL}/api/heroes/${heroData.uuid}` : `${API_BASE_URL}/api/heroes`;
 
+		let res: Response;
 		try {
-			const method = heroData.uuid !== null ? 'PUT' : 'POST';
-			const url = heroData.uuid !== null ? `${API_BASE_URL}/api/heroes/${heroData.uuid}` : `${API_BASE_URL}/api/heroes`;
-
-			const res = await fetch(url, {
+			res = await fetch(url, {
 				method,
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
 				body: JSON.stringify(heroData)
 			});
+		} catch (networkError) {
+			console.error("Network error saving hero data:", networkError);
+			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
+			this.isSyncing = false;
+			return;
+		}
 
+		try {
 			if (res.ok) {
-				const updatedHero = await res.json() as Hero;
-				if (updatedHero.uuid) {
+				let updatedHero: Hero;
+				try {
+					updatedHero = await res.json() as Hero;
+				} catch (parseError) {
+					console.error("JSON parsing error on save hero response:", parseError);
+					this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_SERVER }));
+					return;
+				}
+
+				if (updatedHero && updatedHero.uuid) {
 					this.heroesMap.set(updatedHero.uuid, updatedHero);
 				}
 				this.saveToCache();
@@ -286,8 +321,8 @@ export class HeroManager extends LitElement {
 				}
 			}
 		} catch (e) {
-			console.error("Failed to save hero data", e);
-			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
+			console.error("Unexpected error saving hero data:", e);
+			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_CLIENT }));
 		} finally {
 			this.isSyncing = false;
 		}
