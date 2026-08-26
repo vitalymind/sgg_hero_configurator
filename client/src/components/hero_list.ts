@@ -1,10 +1,16 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { Hero } from '../interfaces.ts';
-import './hero_card.ts';
+import { property } from 'lit/decorators.js';
+import { Hero } from '../interfaces';
+import { HeroCard } from './hero_card';
 
-@customElement('hero-list')
 export class HeroList extends LitElement {
+	static register() {
+		HeroCard.register();
+		if (!customElements.get('hero-list')) {
+			customElements.define('hero-list', HeroList);
+		}
+	}
+
 	@property({ type: Array }) heroes: Hero[] = [];
 	@property({ type: String }) filterQuery = '';
 

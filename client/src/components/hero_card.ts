@@ -1,10 +1,15 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { Hero } from '../interfaces.ts';
-import { modalBackdropStyle, modalContainerStyle } from '../common_styles.ts';
+import { property } from 'lit/decorators.js';
+import { Hero } from '../interfaces';
+import { modalBackdropStyle, modalContainerStyle } from '../common_styles';
 
-@customElement('hero-card')
 export class HeroCard extends LitElement {
+	static register() {
+		if (!customElements.get('hero-card')) {
+			customElements.define('hero-card', HeroCard);
+		}
+	}
+
 	@property({ type: Object }) hero!: Hero;
 
 	static styles = [

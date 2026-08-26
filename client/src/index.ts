@@ -1,9 +1,8 @@
-import './components/status_screen_cover.ts';
-
-import './components/hero_manager.ts';
+import { StatusScreenCover } from './components/status_screen_cover';
+import { HeroManager } from './components/hero_manager';
 
 import { LitElement, html } from 'lit';
-import { customElement, state, query } from 'lit/decorators.js';
+import { state, query } from 'lit/decorators.js';
 import {
 	STATE_CONNECTING_FAILED,
 	STATE_CONNECTING_INIT,
@@ -13,15 +12,22 @@ import {
 	STATE_AUTH_VERIFYING,
 	STATE_AUTH_FAILED,
 	API_BASE_URL
-} from './constants.ts';
+} from './constants';
 
-@customElement('hero-configurator')
 export class HeroConfigurator extends LitElement {
+	static register() {
+		StatusScreenCover.register();
+		HeroManager.register();
+		if (!customElements.get('hero-configurator')) {
+			customElements.define('hero-configurator', HeroConfigurator);
+		}
+	}
+
 	@state() private showStatusCover = true;
 	@state() private loadingState = STATE_CONNECTING_INIT;
 
-	@query('hero-manager') manager: any;
-	@query('status-screen-cover') statusCover: any;
+	@query('hero-manager') manager?: HeroManager;
+	@query('status-screen-cover') statusCover?: StatusScreenCover;
 
 	connectedCallback() {
 		super.connectedCallback();
@@ -121,3 +127,5 @@ export class HeroConfigurator extends LitElement {
 		}
 	}
 }
+
+HeroConfigurator.register();

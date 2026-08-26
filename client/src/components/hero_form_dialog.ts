@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import { Hero } from '../interfaces.ts';
+import { property, state } from 'lit/decorators.js';
+import { Hero } from '../interfaces';
 import {
 	ALLOWED_NAME_CHARACTERS,
 	ALLOWED_SPECIAL_ID_CHARACTERS,
@@ -8,11 +8,16 @@ import {
 	MAX_DEFENSE_SLIDER_AMOUNT,
 	MAX_ATTACK_DEFENSE_VALUE,
 	MAX_STRING_LENGTH
-} from '../constants.ts';
-import { modalBackdropStyle, modalContainerStyle, inputStyle } from '../common_styles.ts';
+} from '../constants';
+import { modalBackdropStyle, modalContainerStyle, inputStyle } from '../common_styles';
 
-@customElement('hero-form-dialog')
 export class HeroFormDialog extends LitElement {
+	static register() {
+		if (!customElements.get('hero-form-dialog')) {
+			customElements.define('hero-form-dialog', HeroFormDialog);
+		}
+	}
+
 	@property({ type: Object }) editingHero: Hero | null = null;
 	@property({ type: Boolean }) isOpen = false;
 

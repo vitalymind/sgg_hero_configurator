@@ -1,5 +1,5 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import {
 	STATE_CONNECTING_FAILED,
 	STATE_CONNECTING_INIT,
@@ -17,8 +17,13 @@ import {
 } from '../constants';
 import { modalBackdropStyle, modalContainerStyle, inputStyle } from '../common_styles';
 
-@customElement('status-screen-cover')
 export class StatusScreenCover extends LitElement {
+	static register() {
+		if (!customElements.get('status-screen-cover')) {
+			customElements.define('status-screen-cover', StatusScreenCover);
+		}
+	}
+
 	@property({ type: Number }) loadingState = STATE_CONNECTING_INIT;
 
 	@state() private emailInput = '';

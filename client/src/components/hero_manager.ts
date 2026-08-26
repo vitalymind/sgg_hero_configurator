@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, state, query } from 'lit/decorators.js';
-import { Hero, LocalStorageCache, HeroesSyncResponse } from '../interfaces.ts';
+import { state, query } from 'lit/decorators.js';
+import { Hero, LocalStorageCache, HeroesSyncResponse } from '../interfaces';
 import {
 	LOCAL_STORAGE_CACHE_KEY,
 	STATE_FATAL_NETWORK,
@@ -11,13 +11,22 @@ import {
 	STATE_FATAL_VALIDATION,
 	HEARTBEAT_TIMEOUT_SECONDS,
 	API_BASE_URL
-} from '../constants.ts';
-import { modalBackdropStyle, modalContainerStyle } from '../common_styles.ts';
-import './hero_list.ts';
-import './hero_form_dialog.ts';
+} from '../constants';
+import { modalBackdropStyle, modalContainerStyle } from '../common_styles';
+import { HeroList } from './hero_list';
+import { HeroFormDialog } from './hero_form_dialog';
+import { StatusScreenCover } from './status_screen_cover';
 
-@customElement('hero-manager')
 export class HeroManager extends LitElement {
+	static register() {
+		HeroList.register();
+		HeroFormDialog.register();
+		StatusScreenCover.register();
+		if (!customElements.get('hero-manager')) {
+			customElements.define('hero-manager', HeroManager);
+		}
+	}
+
 	@state() private heroesMap = new Map<string, Hero>();
 	@state() private lastUpdated = 0;
 	@state() private filterQuery = '';
@@ -28,18 +37,18 @@ export class HeroManager extends LitElement {
 	private eventSource: EventSource | null = null;
 	private pingTimeout: any = null;
 
-	@query('hero-list') heroList: any;
-	@query('hero-form-dialog') formDialog: any;
+	@query('hero-list') heroList?: HeroList;
+	@query('hero-form-dialog') formDialog?: HeroFormDialog;
 
 	clean() {
 		this.filterQuery = '';
 		this.isSyncing = false;
 		this.isDialogOpen = false;
 		this.currentEditHero = null;
-		if (this.heroList && typeof this.heroList.clean === 'function') {
+		if (this.heroList) {
 			this.heroList.clean();
 		}
-		if (this.formDialog && typeof this.formDialog.clean === 'function') {
+		if (this.formDialog) {
 			this.formDialog.clean();
 		}
 	}
