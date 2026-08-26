@@ -180,9 +180,10 @@ export class HeroManager extends LitElement {
 			this.isSyncing = true;
 		}
 
+		const requestedTimestamp = this.lastUpdated;
 		let response: Response;
 		try {
-			response = await fetch(`${API_BASE_URL}/api/heroes?lastUpdated=${this.lastUpdated}`, { credentials: 'include' });
+			response = await fetch(`${API_BASE_URL}/api/heroes?lastUpdated=${requestedTimestamp}`, { credentials: 'include' });
 		} catch (networkError) {
 			console.error("Network error fetching heroes:", networkError);
 			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
@@ -218,8 +219,14 @@ export class HeroManager extends LitElement {
 				}
 
 				if (this.heroesMap.size === 0 && data.activeUuids.length > 0) {
-					this.fetchHeroesClearCache(silent);
-					return;
+					if (requestedTimestamp > 0) {
+						this.fetchHeroesClearCache(silent);
+						return;
+					} else {
+						console.error("Server returned active UUIDs but no hero records for lastUpdated=0");
+						this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_SERVER }));
+						return;
+					}
 				}
 
 				this.saveToCache();
