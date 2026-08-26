@@ -205,7 +205,7 @@ app.get('/api/heroes', (req: Request, res: Response) => {
 	const token = req.cookies.auth_token;
 	if (!token || !isValidSession(token, res)) {
 		return res.status(401).end()
-	};
+	}
 
 	if (req.query.lastUpdated === null || req.query.lastUpdated === undefined) {
 		return res.status(400).end();
@@ -264,12 +264,12 @@ app.put('/api/heroes/:uuid', (req: Request, res: Response) => {
 	const token = req.cookies.auth_token;
 	if (!token || !isValidSession(token, res)) {
 		return res.status(401).end()
-	};
+	}
 
 	const uuid = sanitizeString(req.params.uuid, ALLOWED_UUID_CHARACTERS);
 	if (uuid === null) {
 		return res.status(400).end();
-	};
+	}
 
 	const name = sanitizeString(req.body.name, ALLOWED_NAME_CHARACTERS);
 	const specialSkillId = sanitizeString(req.body.special_skill_id, ALLOWED_SPECIAL_ID_CHARACTERS);

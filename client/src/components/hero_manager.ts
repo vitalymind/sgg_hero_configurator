@@ -12,7 +12,6 @@ import {
 	HEARTBEAT_TIMEOUT_SECONDS,
 	API_BASE_URL
 } from '../constants';
-import { modalBackdropStyle, modalContainerStyle } from '../common_styles';
 import { HeroList } from './hero_list';
 import { HeroFormDialog } from './hero_form_dialog';
 import { StatusScreenCover } from './status_screen_cover';
@@ -53,23 +52,14 @@ export class HeroManager extends LitElement {
 		}
 	}
 
-	static styles = [
-		modalBackdropStyle,
-		modalContainerStyle,
-		css`
-			:host {
-				display: block;
-				max-width: 1200px;
-				margin: 0 auto;
-				padding: 20px;
-			}
-			.loading-text {
-				font-size: 1.5rem;
-				font-weight: bold;
-				text-align: center;
-			}
-			`
-	];
+	static styles = css`
+		:host {
+			display: block;
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 20px;
+		}
+	`;
 
 	connectedCallback() {
 		super.connectedCallback();

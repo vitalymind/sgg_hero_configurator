@@ -1,7 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Hero } from '../interfaces';
-import { modalBackdropStyle, modalContainerStyle } from '../common_styles';
 
 export class HeroCard extends LitElement {
 	static register() {
@@ -12,39 +11,35 @@ export class HeroCard extends LitElement {
 
 	@property({ type: Object }) hero!: Hero;
 
-	static styles = [
-		modalBackdropStyle,
-		modalContainerStyle,
-		css`
-			.card {
-				border: 4px solid black;
-				padding: 15px;
-				display: flex;
-				flex-direction: column;
-				gap: 10px;
-				background: white;
-				height: 100%;
-				cursor: pointer;
-				box-sizing: border-box;
-			}
-			.card:hover {
-				background: #f0f0f0;
-			}
-			.header {
-				font-size: 1.2rem;
-				font-weight: bold;
-				word-break: break-all;
-			}
-			.sub-header {
-				font-size: 1.0rem;
-				font-weight: bold;
-			}
-			.stats {
-				display: flex;
-				gap: 15px;
-			}
-			`
-	];
+	static styles = css`
+		.card {
+			border: 4px solid black;
+			padding: 15px;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			background: white;
+			height: 100%;
+			cursor: pointer;
+			box-sizing: border-box;
+		}
+		.card:hover {
+			background: #f0f0f0;
+		}
+		.header {
+			font-size: 1.2rem;
+			font-weight: bold;
+			word-break: break-all;
+		}
+		.sub-header {
+			font-size: 1.0rem;
+			font-weight: bold;
+		}
+		.stats {
+			display: flex;
+			gap: 15px;
+		}
+	`;
 
 	render() {
 		return html`

@@ -73,9 +73,9 @@ export class HeroConfigurator extends LitElement {
 	private async initServerConnection(): Promise<void> {
 		try {
 			const result = await fetch(`${API_BASE_URL}/api/connect`, { credentials: 'include' });
-			if (result.status == 200) {
+			if (result.status === 200) {
 				this.showStatusCover = false;
-			} else if (result.status == 401) {
+			} else if (result.status === 401) {
 				this.loadingState = STATE_AUTH_EMAIL;
 			} else {
 				this.loadingState = STATE_CONNECTING_FAILED;
@@ -139,4 +139,4 @@ export class HeroConfigurator extends LitElement {
 	}
 }
 
-HeroConfigurator.register();
+HeroConfigurator.register();

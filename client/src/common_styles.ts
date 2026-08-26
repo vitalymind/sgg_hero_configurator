@@ -1,16 +1,6 @@
 import { css } from 'lit';
 
 
-export const statusText = css`
-	.status-text {
-		width: 100%;
-		height: 100%;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-`;
-
 export const modalBackdropStyle = css`
 	.modal-backdrop {
 		position: fixed;
