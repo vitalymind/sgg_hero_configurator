@@ -77,7 +77,9 @@ function writeLog(log: string, token: string = ""): void {
 	let user = "";
 	if (token !== "") {
 		const session = dbGetSession(db, token);
-		if (session) { user = session.email }
+		if (session) {
+			user = session.email;
+		}
 	}
 	console.log(`${log}, ${user !== '' ? 'User email: ' + user : ''}`);
 }

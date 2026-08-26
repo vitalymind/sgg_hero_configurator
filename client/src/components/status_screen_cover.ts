@@ -30,12 +30,16 @@ export class StatusScreenCover extends LitElement {
 	}
 
 	private handleSendOtp() {
-		if (!this.emailInput) return;
+		if (!this.emailInput) {
+			return;
+		}
 		this.dispatchEvent(new CustomEvent('send-otp', { detail: { email: this.emailInput } }));
 	}
 
 	private handleVerifyOtp() {
-		if (!this.otpInput) return;
+		if (!this.otpInput) {
+			return;
+		}
 		this.dispatchEvent(new CustomEvent('verify-otp', { detail: { email: this.emailInput, otp: this.otpInput } }));
 	}
 

@@ -225,7 +225,9 @@ export class HeroFormDialog extends LitElement {
 	}
 
 	private saveHero() {
-		if (!this.isValid()) { return };
+		if (!this.isValid()) {
+			return;
+		}
 
 		const heroData: Hero = {
 			uuid: this.editingHero ? this.editingHero.uuid : null,
@@ -335,7 +337,9 @@ export class HeroFormDialog extends LitElement {
 	}
 
 	render() {
-		if (!this.isOpen) { return html``; }
+		if (!this.isOpen) {
+			return html``;
+		}
 		return this.showConfirmDialog ? this.renderConfirmDialog() : this.renderFormDialog();
 	}
 }

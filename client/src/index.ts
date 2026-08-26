@@ -43,8 +43,12 @@ export class HeroConfigurator extends LitElement {
 	}
 
 	private clean() {
-		if (this.manager) { this.manager.clean() };
-		if (this.statusCover) { this.statusCover.clean() };
+		if (this.manager) {
+			this.manager.clean();
+		}
+		if (this.statusCover) {
+			this.statusCover.clean();
+		}
 	}
 
 	private restartApp() {

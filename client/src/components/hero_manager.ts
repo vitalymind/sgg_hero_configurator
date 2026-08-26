@@ -36,8 +36,12 @@ export class HeroManager extends LitElement {
 		this.isSyncing = false;
 		this.isDialogOpen = false;
 		this.currentEditHero = null;
-		if (this.heroList && typeof this.heroList.clean === 'function') this.heroList.clean();
-		if (this.formDialog && typeof this.formDialog.clean === 'function') this.formDialog.clean();
+		if (this.heroList && typeof this.heroList.clean === 'function') {
+			this.heroList.clean();
+		}
+		if (this.formDialog && typeof this.formDialog.clean === 'function') {
+			this.formDialog.clean();
+		}
 	}
 
 	static styles = [
@@ -154,7 +158,9 @@ export class HeroManager extends LitElement {
 	}
 
 	private async fetchHeroes(silent: boolean = false) {
-		if (!silent) this.isSyncing = true;
+		if (!silent) {
+			this.isSyncing = true;
+		}
 		try {
 			const response = await fetch(`${API_BASE_URL}/api/heroes?lastUpdated=${this.lastUpdated}`, { credentials: 'include' });
 			if (response.ok) {
@@ -192,7 +198,9 @@ export class HeroManager extends LitElement {
 			console.error("Failed to fetch heroes", e);
 			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
 		} finally {
-			if (!silent) this.isSyncing = false;
+			if (!silent) {
+				this.isSyncing = false;
+			}
 		}
 	}
 
