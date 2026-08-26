@@ -115,90 +115,143 @@ export class StatusScreenCover extends LitElement {
 		`
 	];
 
-	renderStatus(): TemplateResult {
+	private handleEmailInput(e: Event) {
+		this.emailInput = (e.target as HTMLInputElement).value;
+	}
+
+	private handleOtpInput(e: Event) {
+		this.otpInput = (e.target as HTMLInputElement).value;
+	}
+
+	private renderSimpleMessage(title: string): TemplateResult {
+		return html`<h2>${title}</h2>`;
+	}
+
+	private renderEmailForm(): TemplateResult {
+		return html`
+			<h1>SGG Hero Configurator</h1>
+			<div class="form-group">
+				<label>Login</label>
+				<span class="hint">Hint: your email is user@email.com
+					<span class="copy-span" @click=${() => navigator.clipboard.writeText('user@email.com')}>📋</span>
+					or user2@email.com
+					<span class="copy-span" @click=${() => navigator.clipboard.writeText('user2@email.com')}>📋</span>
+				</span>
+				<input
+					class="input-field"
+					type="email"
+					placeholder="Email"
+					.value=${this.emailInput}
+					@input=${this.handleEmailInput}
+					@keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.handleSendOtp()}
+				/>
+			</div>
+			<div class="dialog-actions">
+				<button class="primary" @click=${this.handleSendOtp}>Send OTP</button>
+			</div>
+		`;
+	}
+
+	private renderOtpForm(): TemplateResult {
+		return html`
+			<h1>SGG Hero Configurator</h1>
+			<div class="form-group">
+				<label>Enter OTP</label>
+				<span class="hint">Hint: your OTP is 123456 <span class="copy-span" @click=${() => navigator.clipboard.writeText('123456')}>📋</span></span>
+				<input
+					class="input-field"
+					type="text"
+					placeholder="6-digit OTP"
+					.value=${this.otpInput}
+					@input=${this.handleOtpInput}
+					@keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.handleVerifyOtp()}
+				/>
+			</div>
+			<div class="dialog-actions">
+				<button class="primary" @click=${this.handleVerifyOtp}>Login</button>
+			</div>
+		`;
+	}
+
+	private renderSessionExpired(): TemplateResult {
+		return html`
+			<h2>Session expired ⏱️</h2>
+			<p>Please log in again.</p>
+			<div class="dialog-actions">
+				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('relog'))}>Log In</button>
+			</div>
+		`;
+	}
+
+	private renderNetworkError(): TemplateResult {
+		return html`
+			<h2>Network Error 📶</h2>
+			<p>Unable to reach the server. Please check your internet connection.</p>
+			<div class="dialog-actions">
+				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
+			</div>
+		`;
+	}
+
+	private renderServerError(): TemplateResult {
+		return html`
+			<h2>Server Error 🖥️</h2>
+			<p>The server encountered a problem. Please try again later.</p>
+			<div class="dialog-actions">
+				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
+			</div>
+		`;
+	}
+
+	private renderClientError(): TemplateResult {
+		return html`
+			<h2>Client Error ❌</h2>
+			<p>An unexpected error occurred in the application.</p>
+			<div class="dialog-actions">
+				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
+			</div>
+		`;
+	}
+
+	private renderValidationError(): TemplateResult {
+		return html`
+			<h2>Validation Error ⚠️</h2>
+			<p>The hero data did not pass server validation.</p>
+			<div class="dialog-actions">
+				<button class="primary" @click=${() => location.reload()}>Reload Page</button>
+			</div>
+		`;
+	}
+
+	private renderStatus(): TemplateResult {
 		switch (this.loadingState) {
 			case STATE_CONNECTING_FAILED:
-				return html`<h2>Server is currently unavailable 🖥️🔌</h2>`;
+				return this.renderSimpleMessage('Server is currently unavailable 🖥️🔌');
 			case STATE_AUTH_EMAIL:
-				return html`
-					<h1>SGG Hero Configurator</h1>
-					<div class="form-group">
-						<label>Login</label>
-						<span class="hint">Hint: your email is user@email.com
-							<span class="copy-span" @click=${() => navigator.clipboard.writeText('user@email.com')}>📋</span>
-							or user2@email.com
-							<span class="copy-span" @click=${() => navigator.clipboard.writeText('user2@email.com')}>📋</span>
-						</span>
-						<input class="input-field" type="email" placeholder="Email" .value=${this.emailInput} @input=${(e: any) => this.emailInput = e.target.value} @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.handleSendOtp()} />
-					</div>
-					<div class="dialog-actions">
-						<button class="primary" @click=${this.handleSendOtp}>Send OTP</button>
-					</div>
-				`;
+				return this.renderEmailForm();
 			case STATE_AUTH_SENDING_OTP:
-				return html`<h2>Sending OTP...</h2>`;
+				return this.renderSimpleMessage('Sending OTP...');
 			case STATE_AUTH_OTP:
-				return html`
-					<h1>SGG Hero Configurator</h1>
-					<div class="form-group">
-						<label>Enter OTP</label>
-						<span class="hint">Hint: your OTP is 123456 <span class="copy-span" @click=${() => navigator.clipboard.writeText('123456')}>📋</span></span>
-						<input class="input-field" type="text" placeholder="6-digit OTP" .value=${this.otpInput} @input=${(e: any) => this.otpInput = e.target.value} @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.handleVerifyOtp()} />
-					</div>
-					<div class="dialog-actions">
-						<button class="primary" @click=${this.handleVerifyOtp}>Login</button>
-					</div>
-				`;
+				return this.renderOtpForm();
 			case STATE_AUTH_VERIFYING:
-				return html`<h2>Verifying...</h2>`;
+				return this.renderSimpleMessage('Verifying...');
 			case STATE_AUTH_FAILED:
-				return html`
-					<h2>Access denied ❌</h2>
-				`;
+				return this.renderSimpleMessage('Access denied ❌');
 			case STATE_AUTH_EXPIRED:
-				return html`
-					<h2>Session expired ⏱️</h2>
-					<p>Please log in again.</p>
-					<div class="dialog-actions">
-						<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('relog'))}>Log In</button>
-					</div>
-				`;
+				return this.renderSessionExpired();
 			case STATE_FATAL_NETWORK:
-				return html`
-					<h2>Network Error 📶</h2>
-					<p>Unable to reach the server. Please check your internet connection.</p>
-					<div class="dialog-actions">
-						<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
-					</div>
-				`;
+				return this.renderNetworkError();
 			case STATE_FATAL_SERVER:
-				return html`
-					<h2>Server Error 🖥️</h2>
-					<p>The server encountered a problem. Please try again later.</p>
-					<div class="dialog-actions">
-						<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
-					</div>
-				`;
+				return this.renderServerError();
 			case STATE_FATAL_CLIENT:
-				return html`
-					<h2>Client Error ❌</h2>
-					<p>An unexpected error occurred in the application.</p>
-					<div class="dialog-actions">
-						<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
-					</div>
-				`;
+				return this.renderClientError();
 			case STATE_FATAL_VALIDATION:
-				return html`
-					<h2>Validation Error ⚠️</h2>
-					<p>The hero data did not pass server validation.</p>
-					<div class="dialog-actions">
-						<button class="primary" @click=${() => location.reload()}>Reload Page</button>
-					</div>
-				`;
+				return this.renderValidationError();
 			case STATE_SYNCING_DATA:
-				return html`<h2>Downloading heroes data...</h2>`;
+				return this.renderSimpleMessage('Downloading heroes data...');
+			default:
+				return this.renderSimpleMessage('Connecting...');
 		}
-		return html`<h2>Connecting...</h2>`;
 	}
 
 	render() {
