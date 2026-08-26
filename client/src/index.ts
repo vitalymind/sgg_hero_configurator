@@ -11,6 +11,8 @@ import {
 	STATE_AUTH_OTP,
 	STATE_AUTH_VERIFYING,
 	STATE_AUTH_FAILED,
+	STATE_FATAL_SERVER,
+	STATE_FATAL_NETWORK,
 	API_BASE_URL
 } from './constants';
 
@@ -119,11 +121,14 @@ export class HeroConfigurator extends LitElement {
 
 			if (result.ok) {
 				this.showStatusCover = false;
+			} else if (result.status >= 500) {
+				this.loadingState = STATE_FATAL_SERVER;
 			} else {
 				this.loadingState = STATE_AUTH_FAILED;
 			}
 		} catch (error) {
-			this.loadingState = STATE_AUTH_FAILED;
+			console.error("Failed to verify OTP", error);
+			this.loadingState = STATE_FATAL_NETWORK;
 		}
 	}
 }

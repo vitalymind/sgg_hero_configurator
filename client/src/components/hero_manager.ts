@@ -119,7 +119,11 @@ export class HeroManager extends LitElement {
 		};
 		this.eventSource.onerror = (e) => {
 			console.error("EventSource failed", e);
-			this.fetchHeroes(true);
+			if (this.eventSource && this.eventSource.readyState === EventSource.CLOSED) {
+				this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_NETWORK }));
+			} else {
+				this.fetchHeroes(true);
+			}
 		};
 	}
 
@@ -149,16 +153,25 @@ export class HeroManager extends LitElement {
 			lastUpdated: this.lastUpdated,
 			heroes: []
 		};
-		localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(data));
+		try {
+			localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(data));
+		} catch (e) {
+			console.error("Failed to clear cache", e);
+		}
 	}
 
 	private saveToCache() {
-		const data: LocalStorageCache = {
-			lastUpdated: this.lastUpdated,
-			heroes: Array.from(this.heroesMap.values())
-		};
-		localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(data));
-		this.requestUpdate();
+		try {
+			const data: LocalStorageCache = {
+				lastUpdated: this.lastUpdated,
+				heroes: Array.from(this.heroesMap.values())
+			};
+			localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(data));
+			this.requestUpdate();
+		} catch (e) {
+			console.error("Failed to save to cache", e);
+			this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_CLIENT }));
+		}
 	}
 
 	private async fetchHeroesClearCache(silent: boolean = false) {
