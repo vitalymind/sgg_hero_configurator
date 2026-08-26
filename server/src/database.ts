@@ -12,7 +12,7 @@ export function generateShortUuid(): string {
 }
 
 // Data sanitization
-export function sanitizeString(input: any, allowedChars: string[]): string | null {
+export function sanitizeString(input: unknown, allowedChars: string[]): string | null {
 	if (typeof input !== 'string') {
 		return null;
 	}
@@ -28,7 +28,7 @@ export function sanitizeString(input: any, allowedChars: string[]): string | nul
 	return input;
 }
 
-export function parseNumber(input: any): number | null {
+export function parseNumber(input: unknown): number | null {
 	let val: number | null = null;
 	if (typeof input === 'number') {
 		val = Math.floor(input);

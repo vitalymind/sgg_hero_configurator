@@ -35,7 +35,7 @@ export class HeroManager extends LitElement {
 	@state() private isDialogOpen = false;
 	@state() private currentEditHero: Hero | null = null;
 	private eventSource: EventSource | null = null;
-	private pingTimeout: any = null;
+	private pingTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	@query('hero-list') heroList?: HeroList;
 	@query('hero-form-dialog') formDialog?: HeroFormDialog;

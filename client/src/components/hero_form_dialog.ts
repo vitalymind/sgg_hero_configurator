@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { Hero } from '../interfaces';
 import {
@@ -110,7 +110,7 @@ export class HeroFormDialog extends LitElement {
 		this.lastValidDefense = '0';
 	}
 
-	updated(changedProperties: Map<string, any>) {
+	updated(changedProperties: Map<string, PropertyValues<HeroFormDialog>>) {
 		if (changedProperties.has('editingHero') || changedProperties.has('isOpen')) {
 			if (this.isOpen) {
 				if (this.editingHero) {
