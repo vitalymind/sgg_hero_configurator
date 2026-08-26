@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Hero } from '../interfaces.ts';
 import {
@@ -238,72 +238,105 @@ export class HeroFormDialog extends LitElement {
 		this.dispatchEvent(new CustomEvent('save-hero', { detail: heroData }));
 	}
 
-	render() {
-		if (!this.isOpen) { return html`` };
-
-		if (this.showConfirmDialog) {
-			return html`
-				<div class="modal-backdrop">
-					<div class="modal-container">
-						<h3>Confirm Deletion</h3>
-						<p>Are you sure you want to delete ${this.editingHero?.name}?</p>
-						<div class="dialog-actions">
-							<button @click=${() => this.showConfirmDialog = false}>Cancel</button>
-							<button class="delete" @click=${this.confirmDelete}>🗑️ Delete</button>
-						</div>
-					</div>
-				</div>
-			`;
-		}
-
-		const nameErrorClass = (this.name && !this.isNameValid()) || !this.name ? 'error' : '';
-		const skillErrorClass = (this.special_skill_id && !this.isSpecialSkillValid()) || !this.special_skill_id ? 'error' : '';
-
+	private renderConfirmDialog(): TemplateResult {
 		return html`
 			<div class="modal-backdrop">
 				<div class="modal-container">
-					${this.editingHero ?
-				html`
-						<h1>Edit Hero</h1>
-						<span class="uuid-span">uuid: ${this.editingHero.uuid}
-							<span class="uuid-span-copy" @click="${() => navigator.clipboard.writeText(this.editingHero ? this.editingHero.uuid! : '')}">📋</span>
-						</span>` :
-				html`<h1>Add New Hero</h1>`
-			}
-
-					<div class="form-group">
-						<label>Name</label>
-						<input class="input-field ${nameErrorClass}" type="text" .value="${this.name}" @input="${this.handleNameInput}">
-					</div>
-
-					<div class="form-group">
-						<label>Attack</label>
-						<div class="slider-group">
-							<input type="range" min="0" max="${MAX_ATTACK_SLIDER_AMOUNT}" .value="${this.attack.toString()}" @input="${this.handleAttackSlider}">
-							<input class="input-field" type="text" .value="${this.attack.toString()}" @input="${this.handleAttackInput}">
-						</div>
-					</div>
-
-					<div class="form-group">
-						<label>Defense</label>
-						<div class="slider-group">
-							<input type="range" min="0" max="${MAX_DEFENSE_SLIDER_AMOUNT}" .value="${this.defense.toString()}" @input="${this.handleDefenseSlider}">
-							<input class="input-field" type="text" .value="${this.defense.toString()}" @input="${this.handleDefenseInput}">
-						</div>
-					</div>
-
-					<div class="form-group">
-						<label>Special Skill ID</label>
-						<input class="input-field ${skillErrorClass}" type="text" .value="${this.special_skill_id}" @input="${this.handleSpecialSkillInput}">
-					</div>
-
+					<h3>Confirm Deletion</h3>
+					<p>Are you sure you want to delete ${this.editingHero?.name}?</p>
 					<div class="dialog-actions">
-						${this.editingHero ? html`<button class="delete" @click="${() => this.showConfirmDialog = true}">🗑️ Delete</button>` : ''}
-						<button @click="${this.closeDialog}">↩️ Cancel</button>
-						<button class="primary" ?disabled="${!this.isValid()}" @click="${this.saveHero}">${this.editingHero ? '💾 Save' : '➕ Add hero'}</button>
+						<button @click=${() => this.showConfirmDialog = false}>Cancel</button>
+						<button class="delete" @click=${this.confirmDelete}>🗑️ Delete</button>
 					</div>
 				</div>
 			</div>
 		`;
 	}
+
+	private renderHeader(): TemplateResult {
+		if (this.editingHero) {
+			return html`
+				<h1>Edit Hero</h1>
+				<span class="uuid-span">uuid: ${this.editingHero.uuid}
+					<span class="uuid-span-copy" @click="${() => navigator.clipboard.writeText(this.editingHero ? this.editingHero.uuid! : '')}">📋</span>
+				</span>
+			`;
+		}
+		return html`<h1>Add New Hero</h1>`;
+	}
+
+	private renderNameField(): TemplateResult {
+		const nameErrorClass = (this.name && !this.isNameValid()) || !this.name ? 'error' : '';
+		return html`
+			<div class="form-group">
+				<label>Name</label>
+				<input class="input-field ${nameErrorClass}" type="text" .value="${this.name}" @input="${this.handleNameInput}">
+			</div>
+		`;
+	}
+
+	private renderAttackField(): TemplateResult {
+		return html`
+			<div class="form-group">
+				<label>Attack</label>
+				<div class="slider-group">
+					<input type="range" min="0" max="${MAX_ATTACK_SLIDER_AMOUNT}" .value="${this.attack.toString()}" @input="${this.handleAttackSlider}">
+					<input class="input-field" type="text" .value="${this.attack.toString()}" @input="${this.handleAttackInput}">
+				</div>
+			</div>
+		`;
+	}
+
+	private renderDefenseField(): TemplateResult {
+		return html`
+			<div class="form-group">
+				<label>Defense</label>
+				<div class="slider-group">
+					<input type="range" min="0" max="${MAX_DEFENSE_SLIDER_AMOUNT}" .value="${this.defense.toString()}" @input="${this.handleDefenseSlider}">
+					<input class="input-field" type="text" .value="${this.defense.toString()}" @input="${this.handleDefenseInput}">
+				</div>
+			</div>
+		`;
+	}
+
+	private renderSpecialSkillField(): TemplateResult {
+		const skillErrorClass = (this.special_skill_id && !this.isSpecialSkillValid()) || !this.special_skill_id ? 'error' : '';
+		return html`
+			<div class="form-group">
+				<label>Special Skill ID</label>
+				<input class="input-field ${skillErrorClass}" type="text" .value="${this.special_skill_id}" @input="${this.handleSpecialSkillInput}">
+			</div>
+		`;
+	}
+
+	private renderDialogActions(): TemplateResult {
+		return html`
+			<div class="dialog-actions">
+				${this.editingHero ? html`<button class="delete" @click="${() => this.showConfirmDialog = true}">🗑️ Delete</button>` : ''}
+				<button @click="${this.closeDialog}">↩️ Cancel</button>
+				<button class="primary" ?disabled="${!this.isValid()}" @click="${this.saveHero}">${this.editingHero ? '💾 Save' : '➕ Add hero'}</button>
+			</div>
+		`;
+	}
+
+	private renderFormDialog(): TemplateResult {
+		return html`
+			<div class="modal-backdrop">
+				<div class="modal-container">
+					${this.renderHeader()}
+					${this.renderNameField()}
+					${this.renderAttackField()}
+					${this.renderDefenseField()}
+					${this.renderSpecialSkillField()}
+					${this.renderDialogActions()}
+				</div>
+			</div>
+		`;
+	}
+
+	render() {
+		if (!this.isOpen) { return html``; }
+		return this.showConfirmDialog ? this.renderConfirmDialog() : this.renderFormDialog();
+	}
 }
+
