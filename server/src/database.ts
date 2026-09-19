@@ -1,50 +1,13 @@
 import { DatabaseSync } from "node:sqlite";
 import { Hero } from "./interfaces.js";
-import { MAX_NUMERIC_VALUE, MIN_NUMERIC_VALUE, MAX_STRING_LENGTH } from "./constants.js";
 import crypto from 'crypto';
 
-//Generate short (for better UI), but still strongly unique UUID
-export function generateShortUuid(): string {
+//Generate short (for better UI), but still strongly unique, given low burst frequency
+export function generateShortHeroId(): string {
 	const timePart = Date.now().toString(36);
 	const randomPart = crypto.randomBytes(4).toString('hex');
 	const rawId = timePart + randomPart;
 	return rawId.match(/.{1,4}/g)?.join('-') || rawId;
-}
-
-// Data sanitization
-export function sanitizeString(input: unknown, allowedChars: string[]): string | null {
-	if (typeof input !== 'string') {
-		return null;
-	}
-	if (input.length > MAX_STRING_LENGTH) {
-		return null;
-	}
-	const allowedSet = new Set(allowedChars);
-	for (const char of input) {
-		if (!allowedSet.has(char)) {
-			return null;
-		}
-	}
-	return input;
-}
-
-export function parseNumber(input: unknown): number | null {
-	let val: number | null = null;
-	if (typeof input === 'number') {
-		val = Math.floor(input);
-	} else if (typeof input === 'string') {
-		const parsed = parseInt(input, 10);
-		if (!isNaN(parsed)) {
-			val = parsed;
-		}
-	}
-	if (val !== null) {
-		if (val < MIN_NUMERIC_VALUE || val > MAX_NUMERIC_VALUE) {
-			return null;
-		}
-		return val;
-	}
-	return null;
 }
 
 // DB Operations
@@ -74,6 +37,7 @@ export function dbInitEmpty(db: DatabaseSync): void {
 		)
 	`);
 
+	//Debug
 	const countRow = db.prepare('SELECT COUNT(id) as count FROM heroes').get() as { count: number };
 	if (countRow.count === 0) {
 		debugSeedDatabase(db);
@@ -174,7 +138,7 @@ function debugSeedDatabase(db: DatabaseSync): void {
 		{ name: "Krampus", attack: 65, defense: 95, special_skill_id: "frost_taunt" }
 	];
 	for (const hero of initialHeroes) {
-		const heroUuid = generateShortUuid();
+		const heroUuid = generateShortHeroId();
 		dbCreateHero(db, heroUuid, hero.name, hero.attack, hero.defense, hero.special_skill_id);
 	}
 }

@@ -1,14 +1,27 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import crypto from 'crypto';
+import { z } from 'zod';
 import { SESSION_LENGTH_MINUTES } from '../constants.js';
 import { dbGetSession, dbDeleteSession, dbCreateOrUpdateSession } from '../database.js';
+import { validateRequest } from '../middlewares/validate.js';
+import { requireAuth } from '../middlewares/auth.js';
 
 // Config
 const maxSessionAge = SESSION_LENGTH_MINUTES * 60 * 1000;
 
 // Mockup auth configuration
 const whitelistedEmails: string[] = ["user@email.com", "user2@email.com"];
+
+// Schemas
+export const LoginSchema = z.object({
+	email: z.string().email()
+});
+
+export const VerifyOtpSchema = z.object({
+	email: z.string().email(),
+	otp: z.string().min(1)
+});
 
 /*
 	Simple OTP flow
@@ -70,20 +83,12 @@ export function createAuthRouter(db: DatabaseSync): Router {
 	const router = Router();
 	const log = (message: string, token: string = "") => writeLog(db, message, token);
 
-	router.get('/connect', (req: Request, res: Response) => {
-		const token = req.cookies.auth_token;
-		if (token && isValidSession(db, token, res)) {
-			return res.status(200).end();
-		}
-		return res.status(401).end();
+	router.get('/connect', requireAuth(db), (_req: Request, res: Response) => {
+		return res.status(200).end();
 	});
 
-	router.post('/login', (req: Request, res: Response) => {
+	router.post('/login', validateRequest({ body: LoginSchema }), (req: Request, res: Response) => {
 		const { email } = req.body;
-		if (!email || typeof email !== 'string') {
-			log(`[AUTH]: login with invalid email ${email}`);
-			return res.status(400).end();
-		}
 
 		if (whitelistedEmails.includes(email)) {
 			// Simple mock-up
@@ -99,13 +104,8 @@ export function createAuthRouter(db: DatabaseSync): Router {
 		return res.status(200).json({ message: "OTP sent successfully" });
 	});
 
-	router.post('/login/verify', (req: Request, res: Response) => {
+	router.post('/login/verify', validateRequest({ body: VerifyOtpSchema }), (req: Request, res: Response) => {
 		const { email, otp } = req.body;
-
-		if (!email || !otp) {
-			log(`[AUTH]: Data error OTP ${otp} email ${email}`);
-			return res.status(401).end();
-		}
 
 		log(`[AUTH]: Received OTP ${otp} from ${email}`);
 

@@ -1,8 +1,50 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
-import { ALLOWED_NAME_CHARACTERS, ALLOWED_SPECIAL_ID_CHARACTERS, ALLOWED_UUID_CHARACTERS, HEARTBEAT_SEND_RATE_SECONDS } from '../constants.js';
-import { dbCreateHero, dbGetHeroesSince, dbGetActiveUuids, dbUpdateHero, getTimeStamp, parseNumber, sanitizeString, generateShortUuid } from '../database.js';
-import { isValidSession, writeLog } from './auth.js';
+import { z } from 'zod';
+import {
+	NAME_REGEX,
+	SPECIAL_SKILL_ID_REGEX,
+	UUID_REGEX,
+	MAX_STRING_LENGTH,
+	MIN_NUMERIC_VALUE,
+	MAX_NUMERIC_VALUE,
+	HEARTBEAT_SEND_RATE_SECONDS
+} from '../constants.js';
+import {
+	dbCreateHero,
+	dbGetHeroesSince,
+	dbGetActiveUuids,
+	dbUpdateHero,
+	getTimeStamp,
+	generateShortHeroId
+} from '../database.js';
+import { writeLog } from './auth.js';
+import { requireAuth } from '../middlewares/auth.js';
+import { validateRequest } from '../middlewares/validate.js';
+
+// Schemas
+export const HeroQuerySchema = z.object({
+	lastUpdated: z.coerce.number().int().min(0)
+});
+
+export const HeroParamsSchema = z.object({
+	uuid: z.string().regex(UUID_REGEX)
+});
+
+export const CreateHeroBodySchema = z.object({
+	name: z.string().min(1).max(MAX_STRING_LENGTH).regex(NAME_REGEX),
+	special_skill_id: z.string().min(1).max(MAX_STRING_LENGTH).regex(SPECIAL_SKILL_ID_REGEX),
+	attack: z.coerce.number().int().min(MIN_NUMERIC_VALUE).max(MAX_NUMERIC_VALUE),
+	defense: z.coerce.number().int().min(MIN_NUMERIC_VALUE).max(MAX_NUMERIC_VALUE)
+});
+
+export const UpdateHeroBodySchema = z.object({
+	name: z.string().min(1).max(MAX_STRING_LENGTH).regex(NAME_REGEX),
+	special_skill_id: z.string().min(1).max(MAX_STRING_LENGTH).regex(SPECIAL_SKILL_ID_REGEX),
+	attack: z.coerce.number().int().min(MIN_NUMERIC_VALUE).max(MAX_NUMERIC_VALUE),
+	defense: z.coerce.number().int().min(MIN_NUMERIC_VALUE).max(MAX_NUMERIC_VALUE),
+	status: z.enum(['active', 'deleted'])
+});
 
 // Heartbeat and outside updates
 
@@ -22,14 +64,11 @@ setInterval(() => {
 
 export function createHeroesRouter(db: DatabaseSync): Router {
 	const router = Router();
+	router.use(requireAuth(db));
+
 	const log = (message: string, token: string = "") => writeLog(db, message, token);
-	const validateSession = (token: string, res: Response) => isValidSession(db, token, res);
 
 	router.get('/stream', (req: Request, res: Response) => {
-		const token = req.cookies.auth_token;
-		if (!token || !validateSession(token, res)) {
-			return res.status(401).end();
-		}
 		res.setHeader('Content-Type', 'text/event-stream');
 		res.setHeader('Cache-Control', 'no-cache');
 		res.setHeader('Connection', 'keep-alive');
@@ -43,21 +82,9 @@ export function createHeroesRouter(db: DatabaseSync): Router {
 	});
 
 	// DB routes
-	router.get('/', (req: Request, res: Response) => {
-		const token = req.cookies.auth_token;
-		if (!token || !validateSession(token, res)) {
-			return res.status(401).end();
-		}
-
-		if (req.query.lastUpdated === null || req.query.lastUpdated === undefined) {
-			return res.status(400).end();
-		}
-
+	router.get('/', validateRequest({ query: HeroQuerySchema }), (req: Request, res: Response) => {
+		const token = res.locals.authToken as string;
 		const lastUpdated = Number(req.query.lastUpdated);
-
-		if (isNaN(lastUpdated)) {
-			return res.status(400).end();
-		}
 
 		try {
 			const heroes = dbGetHeroesSince(db, lastUpdated);
@@ -74,25 +101,13 @@ export function createHeroesRouter(db: DatabaseSync): Router {
 		}
 	});
 
-	router.post('/', (req: Request, res: Response) => {
-		const token = req.cookies.auth_token;
-		if (!token || !validateSession(token, res)) {
-			return res.status(401).end();
-		}
-
-		const name = sanitizeString(req.body.name, ALLOWED_NAME_CHARACTERS);
-		const specialSkillId = sanitizeString(req.body.special_skill_id, ALLOWED_SPECIAL_ID_CHARACTERS);
-		const attack = parseNumber(req.body.attack);
-		const defense = parseNumber(req.body.defense);
-
-		if (!name || !specialSkillId || attack === null || defense === null) {
-			log(`[DB]: Validation failed for POST /api/heroes`, token);
-			return res.status(422).end();
-		}
+	router.post('/', validateRequest({ body: CreateHeroBodySchema }), (req: Request, res: Response) => {
+		const token = res.locals.authToken as string;
+		const { name, special_skill_id, attack, defense } = req.body;
 
 		try {
-			const heroUuid = generateShortUuid();
-			const newHero = dbCreateHero(db, heroUuid, name, attack, defense, specialSkillId);
+			const heroUuid = generateShortHeroId();
+			const newHero = dbCreateHero(db, heroUuid, name, attack, defense, special_skill_id);
 			log(`[DB]: Creating hero ${name} data with uuid ${heroUuid}`, token);
 			notifyClients();
 			return res.status(200).json(newHero);
@@ -102,35 +117,13 @@ export function createHeroesRouter(db: DatabaseSync): Router {
 		}
 	});
 
-	router.put('/:uuid', (req: Request, res: Response) => {
-		const token = req.cookies.auth_token;
-		if (!token || !validateSession(token, res)) {
-			return res.status(401).end();
-		}
-
-		const uuid = sanitizeString(req.params.uuid, ALLOWED_UUID_CHARACTERS);
-		if (uuid === null) {
-			return res.status(400).end();
-		}
-
-		const name = sanitizeString(req.body.name, ALLOWED_NAME_CHARACTERS);
-		const specialSkillId = sanitizeString(req.body.special_skill_id, ALLOWED_SPECIAL_ID_CHARACTERS);
-		const attack = parseNumber(req.body.attack);
-		const defense = parseNumber(req.body.defense);
-		const status = req.body.status;
-
-		if (status !== 'active' && status !== 'deleted') {
-			log(`[DB]: Validation failed for PUT /api/heroes/:uuid (status)`, token);
-			return res.status(400).end();
-		}
-
-		if (!name || !specialSkillId || attack === null || defense === null) {
-			log(`[DB]: Validation failed for PUT /api/heroes/:uuid (data)`, token);
-			return res.status(422).end();
-		}
+	router.put('/:uuid', validateRequest({ params: HeroParamsSchema, body: UpdateHeroBodySchema }), (req: Request, res: Response) => {
+		const token = res.locals.authToken as string;
+		const uuid = req.params.uuid as string;
+		const { name, special_skill_id, attack, defense, status } = req.body;
 
 		try {
-			const updatedHero = dbUpdateHero(db, uuid, name, attack, defense, specialSkillId, status);
+			const updatedHero = dbUpdateHero(db, uuid, name, attack, defense, special_skill_id, status);
 			if (!updatedHero) {
 				log(`[DB]: Failed to update hero ${name} data with uuid ${uuid}. Reason: Failed to find hero entry.`, token);
 				return res.status(404).end();

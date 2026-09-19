@@ -1,6 +1,6 @@
-export const ALLOWED_NAME_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_ 0123456789'.split('');
-export const ALLOWED_SPECIAL_ID_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz0123456789-_'.split('');
-export const ALLOWED_UUID_CHARACTERS = '0123456789abcdefghijklmnopqrstuvwxyz-'.split('');
+export const NAME_REGEX = /^[A-Za-z0-9_\- ]+$/;
+export const SPECIAL_SKILL_ID_REGEX = /^[a-z0-9_\-]+$/;
+export const UUID_REGEX = /^[a-z0-9\-]+$/;
 
 export const SESSION_LENGTH_MINUTES = 60;
 export const HEARTBEAT_SEND_RATE_SECONDS = 10;
