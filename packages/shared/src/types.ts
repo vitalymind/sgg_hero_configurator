@@ -6,7 +6,9 @@ import {
 	HeroQuerySchema,
 	HeroParamsSchema,
 	LoginSchema,
-	VerifyOtpSchema
+	VerifyOtpSchema,
+	HeroesSyncResponseSchema,
+	LocalStorageCacheSchema
 } from './schemas.js';
 
 export type Hero = z.infer<typeof HeroSchema>;
@@ -16,14 +18,5 @@ export type HeroQuery = z.infer<typeof HeroQuerySchema>;
 export type HeroParams = z.infer<typeof HeroParamsSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type VerifyOtpInput = z.infer<typeof VerifyOtpSchema>;
-
-export interface HeroesSyncResponse {
-	lastUpdated: number;
-	heroes: Hero[];
-	activeUuids: string[];
-}
-
-export interface LocalStorageCache {
-	lastUpdated: number;
-	heroes: Hero[];
-}
+export type HeroesSyncResponse = z.infer<typeof HeroesSyncResponseSchema>;
+export type LocalStorageCache = z.infer<typeof LocalStorageCacheSchema>;

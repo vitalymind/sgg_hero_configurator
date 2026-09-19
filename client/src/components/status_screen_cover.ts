@@ -13,7 +13,9 @@ import {
 	STATE_FATAL_SERVER,
 	STATE_FATAL_CLIENT,
 	STATE_SYNCING_DATA,
-	STATE_FATAL_VALIDATION
+	STATE_FATAL_VALIDATION,
+	LoginSchema,
+	VerifyOtpSchema
 } from '../constants';
 import { modalBackdropStyle, modalContainerStyle, inputStyle } from '../common_styles';
 
@@ -34,15 +36,31 @@ export class StatusScreenCover extends LitElement {
 		this.otpInput = '';
 	}
 
+	private get emailValidation() {
+		return LoginSchema.safeParse({ email: this.emailInput });
+	}
+
+	private get isEmailValid(): boolean {
+		return this.emailValidation.success;
+	}
+
+	private get otpValidation() {
+		return VerifyOtpSchema.safeParse({ email: this.emailInput, otp: this.otpInput });
+	}
+
+	private get isOtpValid(): boolean {
+		return this.otpValidation.success;
+	}
+
 	private handleSendOtp() {
-		if (!this.emailInput) {
+		if (!this.isEmailValid) {
 			return;
 		}
 		this.dispatchEvent(new CustomEvent('send-otp', { detail: { email: this.emailInput } }));
 	}
 
 	private handleVerifyOtp() {
-		if (!this.otpInput) {
+		if (!this.isOtpValid) {
 			return;
 		}
 		this.dispatchEvent(new CustomEvent('verify-otp', { detail: { email: this.emailInput, otp: this.otpInput } }));
@@ -112,6 +130,10 @@ export class StatusScreenCover extends LitElement {
 				background-color: #4ade80;
 				transition: background-color 0s;
 			}
+			.error-msg {
+				color: #ef4444;
+				font-size: 0.85em;
+			}
 		`
 	];
 
@@ -123,11 +145,9 @@ export class StatusScreenCover extends LitElement {
 		this.otpInput = (e.target as HTMLInputElement).value;
 	}
 
-	private renderSimpleMessage(title: string): TemplateResult {
-		return html`<h2>${title}</h2>`;
-	}
-
 	private renderEmailForm(): TemplateResult {
+		const hasError = this.emailInput.length > 0 && !this.isEmailValid;
+		const errorMessage = hasError && !this.emailValidation.success ? this.emailValidation.error.flatten().fieldErrors.email?.[0] : undefined;
 		return html`
 			<h1>SGG Hero Configurator</h1>
 			<div class="form-group">
@@ -138,37 +158,41 @@ export class StatusScreenCover extends LitElement {
 					<span class="copy-span" @click=${() => navigator.clipboard.writeText('user2@email.com')}>📋</span>
 				</span>
 				<input
-					class="input-field"
+					class="input-field ${hasError ? 'error' : ''}"
 					type="email"
 					placeholder="Email"
 					.value=${this.emailInput}
 					@input=${this.handleEmailInput}
-					@keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.handleSendOtp()}
+					@keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.isEmailValid && this.handleSendOtp()}
 				/>
+				${errorMessage ? html`<span class="error-msg">${errorMessage}</span>` : ''}
 			</div>
 			<div class="dialog-actions">
-				<button class="primary" @click=${this.handleSendOtp}>Send OTP</button>
+				<button class="primary" ?disabled=${!this.isEmailValid} @click=${this.handleSendOtp}>Send OTP</button>
 			</div>
 		`;
 	}
 
 	private renderOtpForm(): TemplateResult {
+		const hasError = this.otpInput.length > 0 && !this.isOtpValid;
+		const errorMessage = hasError && !this.otpValidation.success ? this.otpValidation.error.flatten().fieldErrors.otp?.[0] : undefined;
 		return html`
 			<h1>SGG Hero Configurator</h1>
 			<div class="form-group">
 				<label>Enter OTP</label>
 				<span class="hint">Hint: your OTP is 123456 <span class="copy-span" @click=${() => navigator.clipboard.writeText('123456')}>📋</span></span>
 				<input
-					class="input-field"
+					class="input-field ${hasError ? 'error' : ''}"
 					type="text"
 					placeholder="6-digit OTP"
 					.value=${this.otpInput}
 					@input=${this.handleOtpInput}
-					@keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.handleVerifyOtp()}
+					@keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.isOtpValid && this.handleVerifyOtp()}
 				/>
+				${errorMessage ? html`<span class="error-msg">${errorMessage}</span>` : ''}
 			</div>
 			<div class="dialog-actions">
-				<button class="primary" @click=${this.handleVerifyOtp}>Login</button>
+				<button class="primary" ?disabled=${!this.isOtpValid} @click=${this.handleVerifyOtp}>Login</button>
 			</div>
 		`;
 	}
@@ -218,25 +242,32 @@ export class StatusScreenCover extends LitElement {
 			<h2>Validation Error ⚠️</h2>
 			<p>The hero data did not pass server validation.</p>
 			<div class="dialog-actions">
-				<button class="primary" @click=${() => location.reload()}>Reload Page</button>
+				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
 			</div>
 		`;
 	}
 
-	private renderStatus(): TemplateResult {
+	render() {
 		switch (this.loadingState) {
+			case STATE_CONNECTING_INIT:
+				return html`<h1>Connecting to server...</h1>`;
 			case STATE_CONNECTING_FAILED:
-				return this.renderSimpleMessage('Server is currently unavailable 🖥️🔌');
+				return html`<h1>Failed to connect to server</h1>`;
 			case STATE_AUTH_EMAIL:
 				return this.renderEmailForm();
 			case STATE_AUTH_SENDING_OTP:
-				return this.renderSimpleMessage('Sending OTP...');
+				return html`<h1>Sending OTP to email...</h1>`;
 			case STATE_AUTH_OTP:
 				return this.renderOtpForm();
 			case STATE_AUTH_VERIFYING:
-				return this.renderSimpleMessage('Verifying...');
+				return html`<h1>Verifying OTP...</h1>`;
 			case STATE_AUTH_FAILED:
-				return this.renderSimpleMessage('Access denied ❌');
+				return html`
+					<h1>Login failed</h1>
+					<div class="dialog-actions">
+						<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('relog'))}>Try Again</button>
+					</div>
+				`;
 			case STATE_AUTH_EXPIRED:
 				return this.renderSessionExpired();
 			case STATE_FATAL_NETWORK:
@@ -248,19 +279,9 @@ export class StatusScreenCover extends LitElement {
 			case STATE_FATAL_VALIDATION:
 				return this.renderValidationError();
 			case STATE_SYNCING_DATA:
-				return this.renderSimpleMessage('Downloading heroes data...');
+				return html`<h2>Synchronizing data with server...</h2>`;
 			default:
-				return this.renderSimpleMessage('Connecting...');
+				return html``;
 		}
-	}
-
-	render() {
-		return html`
-			<div class="modal-backdrop">
-				<div class="modal-container">
-					${this.renderStatus()}
-				</div>
-			</div>
-		`;
 	}
 }

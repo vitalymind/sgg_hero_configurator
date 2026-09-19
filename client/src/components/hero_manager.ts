@@ -10,7 +10,10 @@ import {
 	STATE_SYNCING_DATA,
 	STATE_FATAL_VALIDATION,
 	HEARTBEAT_TIMEOUT_SECONDS,
-	API_BASE_URL
+	API_BASE_URL,
+	LocalStorageCacheSchema,
+	HeroesSyncResponseSchema,
+	HeroSchema
 } from '../constants';
 import { HeroList } from './hero_list';
 import { HeroFormDialog } from './hero_form_dialog';
@@ -121,17 +124,24 @@ export class HeroManager extends LitElement {
 		const cached = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
 		if (cached) {
 			try {
-				const data = JSON.parse(cached) as LocalStorageCache;
-				this.lastUpdated = data.lastUpdated;
-				this.heroesMap.clear();
-				for (const hero of data.heroes) {
-					if (hero.uuid) {
-						this.heroesMap.set(hero.uuid, hero)
+				const raw = JSON.parse(cached);
+				const parseResult = LocalStorageCacheSchema.safeParse(raw);
+				if (parseResult.success) {
+					this.lastUpdated = parseResult.data.lastUpdated;
+					this.heroesMap.clear();
+					for (const hero of parseResult.data.heroes) {
+						if (hero.uuid) {
+							this.heroesMap.set(hero.uuid, hero);
+						}
 					}
+					this.requestUpdate();
+				} else {
+					console.warn("Cached data failed schema validation, resetting cache:", parseResult.error);
+					this.clearCache();
 				}
-				this.requestUpdate();
 			} catch (e) {
 				console.error("Failed to parse cache", e);
+				this.clearCache();
 			}
 		}
 	}
@@ -185,15 +195,23 @@ export class HeroManager extends LitElement {
 
 		try {
 			if (response.ok) {
-				let data: HeroesSyncResponse;
+				let rawData: unknown;
 				try {
-					data = await response.json() as HeroesSyncResponse;
+					rawData = await response.json();
 				} catch (parseError) {
 					console.error("JSON parsing error on heroes response:", parseError);
 					this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_SERVER }));
 					return;
 				}
 
+				const parseResult = HeroesSyncResponseSchema.safeParse(rawData);
+				if (!parseResult.success) {
+					console.error("Heroes sync response failed schema validation:", parseResult.error);
+					this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_SERVER }));
+					return;
+				}
+
+				const data = parseResult.data;
 				this.lastUpdated = data.lastUpdated;
 				for (const hero of data.heroes) {
 					if (hero.uuid) {
@@ -293,15 +311,23 @@ export class HeroManager extends LitElement {
 
 		try {
 			if (res.ok) {
-				let updatedHero: Hero;
+				let rawData: unknown;
 				try {
-					updatedHero = await res.json() as Hero;
+					rawData = await res.json();
 				} catch (parseError) {
 					console.error("JSON parsing error on save hero response:", parseError);
 					this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_SERVER }));
 					return;
 				}
 
+				const parseResult = HeroSchema.safeParse(rawData);
+				if (!parseResult.success) {
+					console.error("Save hero response failed schema validation:", parseResult.error);
+					this.dispatchEvent(new CustomEvent('fatal-error', { detail: STATE_FATAL_SERVER }));
+					return;
+				}
+
+				const updatedHero = parseResult.data;
 				if (updatedHero && updatedHero.uuid) {
 					this.heroesMap.set(updatedHero.uuid, updatedHero);
 				}

@@ -13,7 +13,9 @@ import {
 	STATE_AUTH_FAILED,
 	STATE_FATAL_SERVER,
 	STATE_FATAL_NETWORK,
-	API_BASE_URL
+	API_BASE_URL,
+	LoginSchema,
+	VerifyOtpSchema
 } from './constants';
 
 export class HeroConfigurator extends LitElement {
@@ -91,8 +93,14 @@ export class HeroConfigurator extends LitElement {
 	}
 
 	private async handleSendOtp(e: CustomEvent) {
+		const parseResult = LoginSchema.safeParse(e.detail);
+		if (!parseResult.success) {
+			this.loadingState = STATE_AUTH_FAILED;
+			return;
+		}
+
 		this.loadingState = STATE_AUTH_SENDING_OTP;
-		const email = e.detail.email;
+		const { email } = parseResult.data;
 
 		try {
 			const res = await fetch(`${API_BASE_URL}/api/login`, {
@@ -115,8 +123,14 @@ export class HeroConfigurator extends LitElement {
 	}
 
 	private async handleVerifyOtp(e: CustomEvent) {
+		const parseResult = VerifyOtpSchema.safeParse(e.detail);
+		if (!parseResult.success) {
+			this.loadingState = STATE_AUTH_FAILED;
+			return;
+		}
+
 		this.loadingState = STATE_AUTH_VERIFYING;
-		const { email, otp } = e.detail;
+		const { email, otp } = parseResult.data;
 
 		try {
 			const result = await fetch(`${API_BASE_URL}/api/login/verify`, {

@@ -2,12 +2,10 @@ import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { Hero } from '../interfaces';
 import {
-	NAME_REGEX,
-	SPECIAL_SKILL_ID_REGEX,
+	CreateHeroBodySchema,
 	MAX_ATTACK_SLIDER_AMOUNT,
 	MAX_DEFENSE_SLIDER_AMOUNT,
-	MAX_ATTACK_DEFENSE_VALUE,
-	MAX_STRING_LENGTH
+	MAX_ATTACK_DEFENSE_VALUE
 } from '../constants';
 import { modalBackdropStyle, modalContainerStyle, inputStyle } from '../common_styles';
 
@@ -98,6 +96,10 @@ export class HeroFormDialog extends LitElement {
 				background-color: #4ade80; /* bright green */
 				transition: background-color 0s;
 			}
+			.error-msg {
+				color: #ef4444;
+				font-size: 0.85em;
+			}
 		`
 	];
 
@@ -121,33 +123,28 @@ export class HeroFormDialog extends LitElement {
 					this.lastValidAttack = this.attack.toString();
 					this.lastValidDefense = this.defense.toString();
 				} else {
-					this.name = '';
-					this.attack = 0;
-					this.defense = 0;
-					this.special_skill_id = '';
-					this.lastValidAttack = '0';
-					this.lastValidDefense = '0';
+					this.clean();
 				}
 			}
 		}
 	}
 
-	private isNameValid() {
-		if (!this.name || this.name.length > MAX_STRING_LENGTH) {
-			return false;
-		}
-		return NAME_REGEX.test(this.name);
+	private get formValidation() {
+		return CreateHeroBodySchema.safeParse({
+			name: this.name,
+			special_skill_id: this.special_skill_id,
+			attack: this.attack,
+			defense: this.defense
+		});
 	}
 
-	private isSpecialSkillValid() {
-		if (!this.special_skill_id || this.special_skill_id.length > MAX_STRING_LENGTH) {
-			return false;
-		}
-		return SPECIAL_SKILL_ID_REGEX.test(this.special_skill_id);
+	private get fieldErrors() {
+		const res = this.formValidation;
+		return res.success ? {} : res.error.flatten().fieldErrors;
 	}
 
-	private isValid() {
-		return this.isNameValid() && this.isSpecialSkillValid();
+	private isValid(): boolean {
+		return this.formValidation.success;
 	}
 
 	private handleNameInput(e: Event) {
@@ -224,16 +221,17 @@ export class HeroFormDialog extends LitElement {
 	}
 
 	private saveHero() {
-		if (!this.isValid()) {
+		const result = this.formValidation;
+		if (!result.success) {
 			return;
 		}
 
 		const heroData: Hero = {
 			uuid: this.editingHero ? this.editingHero.uuid : null,
-			name: this.name,
-			attack: this.attack,
-			defense: this.defense,
-			special_skill_id: this.special_skill_id,
+			name: result.data.name,
+			attack: result.data.attack,
+			defense: result.data.defense,
+			special_skill_id: result.data.special_skill_id,
 			status: this.editingHero?.status || 'active'
 		};
 		this.dispatchEvent(new CustomEvent('save-hero', { detail: heroData }));
@@ -267,45 +265,53 @@ export class HeroFormDialog extends LitElement {
 	}
 
 	private renderNameField(): TemplateResult {
-		const nameErrorClass = (this.name && !this.isNameValid()) || !this.name ? 'error' : '';
+		const hasError = !!this.fieldErrors.name;
+		const nameErrorClass = (this.name && hasError) || !this.name ? 'error' : '';
 		return html`
 			<div class="form-group">
 				<label>Name</label>
 				<input class="input-field ${nameErrorClass}" type="text" .value="${this.name}" @input="${this.handleNameInput}">
+				${this.name && hasError ? html`<span class="error-msg">${this.fieldErrors.name![0]}</span>` : ''}
 			</div>
 		`;
 	}
 
 	private renderAttackField(): TemplateResult {
+		const hasError = !!this.fieldErrors.attack;
 		return html`
 			<div class="form-group">
 				<label>Attack</label>
 				<div class="slider-group">
 					<input type="range" min="0" max="${MAX_ATTACK_SLIDER_AMOUNT}" .value="${this.attack.toString()}" @input="${this.handleAttackSlider}">
-					<input class="input-field" type="text" .value="${this.attack.toString()}" @input="${this.handleAttackInput}">
+					<input class="input-field ${hasError ? 'error' : ''}" type="text" .value="${this.attack.toString()}" @input="${this.handleAttackInput}">
 				</div>
+				${hasError ? html`<span class="error-msg">${this.fieldErrors.attack![0]}</span>` : ''}
 			</div>
 		`;
 	}
 
 	private renderDefenseField(): TemplateResult {
+		const hasError = !!this.fieldErrors.defense;
 		return html`
 			<div class="form-group">
 				<label>Defense</label>
 				<div class="slider-group">
 					<input type="range" min="0" max="${MAX_DEFENSE_SLIDER_AMOUNT}" .value="${this.defense.toString()}" @input="${this.handleDefenseSlider}">
-					<input class="input-field" type="text" .value="${this.defense.toString()}" @input="${this.handleDefenseInput}">
+					<input class="input-field ${hasError ? 'error' : ''}" type="text" .value="${this.defense.toString()}" @input="${this.handleDefenseInput}">
 				</div>
+				${hasError ? html`<span class="error-msg">${this.fieldErrors.defense![0]}</span>` : ''}
 			</div>
 		`;
 	}
 
 	private renderSpecialSkillField(): TemplateResult {
-		const skillErrorClass = (this.special_skill_id && !this.isSpecialSkillValid()) || !this.special_skill_id ? 'error' : '';
+		const hasError = !!this.fieldErrors.special_skill_id;
+		const skillErrorClass = (this.special_skill_id && hasError) || !this.special_skill_id ? 'error' : '';
 		return html`
 			<div class="form-group">
 				<label>Special Skill ID</label>
 				<input class="input-field ${skillErrorClass}" type="text" .value="${this.special_skill_id}" @input="${this.handleSpecialSkillInput}">
+				${this.special_skill_id && hasError ? html`<span class="error-msg">${this.fieldErrors.special_skill_id![0]}</span>` : ''}
 			</div>
 		`;
 	}
@@ -339,7 +345,11 @@ export class HeroFormDialog extends LitElement {
 		if (!this.isOpen) {
 			return html``;
 		}
-		return this.showConfirmDialog ? this.renderConfirmDialog() : this.renderFormDialog();
+
+		if (this.showConfirmDialog) {
+			return this.renderConfirmDialog();
+		}
+
+		return this.renderFormDialog();
 	}
 }
-

@@ -24,5 +24,12 @@ export {
 	UUID_REGEX,
 	MAX_STRING_LENGTH,
 	MAX_ATTACK_DEFENSE_VALUE,
-	HEARTBEAT_TIMEOUT_SECONDS
+	HEARTBEAT_TIMEOUT_SECONDS,
+	CreateHeroBodySchema,
+	UpdateHeroBodySchema,
+	HeroSchema,
+	HeroesSyncResponseSchema,
+	LocalStorageCacheSchema,
+	LoginSchema,
+	VerifyOtpSchema
 } from '@hero_manager/shared';
