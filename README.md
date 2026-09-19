@@ -1,75 +1,92 @@
 # SGG Hero Configurator
 
 ## Description
-This project contains a two-part (server + client) hero configurator application.
-The server is designed to run as a dockerized container, while the client is built
-into a static HTML bundle to be hosted on a CDN.
+This project is an end-to-end hero configurator monorepo organized into three parts:
+- **Client (`hero_manager_client`)**: A lightweight Lit Web Components SPA.
+- **Server (`hero_manager_server`)**: A containerized Express REST API with SQLite.
+- **Shared (`@hero_manager/shared`)**: A shared package containing declarative validation schemas (Zod), regexes, constants, and TypeScript types shared between client and server to guarantee zero contract drift.
 
 ## Tech Stack
-- **Client (Frontend)**: Lit (Web Components framework), TypeScript, Vite (Bundler).
-- **Server (Backend)**: Node.js, Express, TypeScript, SQLite (node:sqlite), Docker.
+- **Client (Frontend)**: Lit (Web Components), TypeScript, Vite.
+- **Server (Backend)**: Node.js 22, Express, TypeScript, Zod, native SQLite (`node:sqlite`), Docker.
+- **Shared Package**: TypeScript, Zod.
+- **Monorepo / Workspaces**: npm workspaces.
 
-## Notable features
-- **Real-Time Synchronization (SSE)**: Uses Server-Sent Events (`/api/heroes/stream`) to broadcast data change notifications to all connected clients, backed by a 10-second heartbeat ping with client-side disconnect detection.
+## Notable Features
+- **Shared Declarative Validation**: Zod validation schemas, string regexes, and numeric constraints are declared once in `@hero_manager/shared` and imported by both client and server to eliminate schema drift.
+- **Real-Time Synchronization (SSE)**: Uses Server-Sent Events (`/api/heroes/stream`) to broadcast data updates to all connected clients, backed by a 10-second heartbeat ping with client-side disconnect detection.
 - **Incremental Delta Sync & Reconciliation**: Queries only heroes updated since the client's last timestamp (`?lastUpdated=...`) and reconciles active UUIDs to handle additions, updates, and deletions with minimal network overhead.
 - **Client-Side Caching (LocalStorage)**: Persists hero data to the browser's `localStorage` for fast application startup, followed by background synchronization with the server.
-- **Lightweight Web Components (Lit + TypeScript)**: Native Web Components without bloated framework like React
-- **Data Validation & Sanitization**: Character whitelisting, string length checks, and numeric boundary constraints enforced on both client and server.
+- **Lightweight Web Components (Lit + TypeScript)**: Native Web Components without a bloated framework like React.
 - **Zero-Dependency Native SQLite**: Uses Node 22 native `node:sqlite` (`DatabaseSync`) without native compilation dependencies.
 
 ## How to Build for Local Development
 
 ### Requirements
-- Python
-- Docker
+- Python 3
+- Docker & Docker Compose
 - Node.js v22.5+
 
 ### Installation & Start
-From the root folder, run:
+From the repository root:
 ```bash
 python start_dev_env.py
 ```
-*Note: The SQLite database on the backend auto-seeds itself with 35 heroes upon the first boot.*
+*(This automatically runs root `npm install`, compiles `@hero_manager/shared`, starts the Docker container for the server, and launches Vite for the client).*
+
+### Workspace Commands
+You can also run tasks from the root:
+```bash
+# Build all workspaces (shared -> server -> client)
+npm run build
+
+# Or build individual packages:
+npm run build:shared
+npm run build:server
+npm run build:client
+
+# Start Vite client independently:
+npm run dev:client
+```
 
 ## How to Publish & Deploy
 
 ### 1. Deploying the Frontend (Client)
-The client application is bundled into static HTML/CSS/JS and can be hosted
-on any static hosting or CDN service (e.g., AWS S3 + CloudFront, Vercel, Netlify,
-or an internal corporate CDN).
+The client application is bundled into static HTML/CSS/JS and can be hosted on any static hosting or CDN service (e.g., AWS S3 + CloudFront, Vercel, Netlify, or an internal CDN).
 
 **Build Steps:**
-1. Navigate to the client directory: `cd client`
-2. Install dependencies: `npm install`
-3. Set the production environment variable pointing to your deployed backend.
-For example with `.env` file:
-```bash
-VITE_API_BASE_URL=https://api.your-backend-server.com
-```
-4. Build the project: `npm run build`
-5. Upload the generated `dist/` directory to your static hosting provider.
+1. From the repository root, install dependencies:
+   ```bash
+   npm install
+   ```
+2. Set the production environment variable pointing to your deployed backend in `client/.env`:
+   ```bash
+   VITE_API_BASE_URL=https://api.your-backend-server.com
+   ```
+3. Build the client bundle:
+   ```bash
+   npm run build:client
+   ```
+4. Upload the generated `client/dist/` directory to your static hosting provider.
 
 ### 2. Deploying the Backend (Server)
-The backend is dockerized and ready to be deployed to any container orchestration
-service (e.g., AWS ECS, Docker Swarm, Kubernetes) or a basic VPS running Docker.
+The backend is dockerized and ready to be deployed to any container orchestration service (e.g., AWS ECS, Docker Swarm, Kubernetes) or a VPS running Docker.
 
 **Build & Run Steps:**
-1. Go to server directory: `cd server`
+1. Navigate to the server directory: `cd server`
 2. Create an `.env` file containing your production settings.
 
-.env should setup CORS policy using comma-separated string of domain names
-```env
-ALLOWED_CORS_DOMAINS=http://localhost:5173,https://your-frontend-domain.com
-```
-
-Optionally you can override defaut server port and database path
-```env
-PORT=3000
-DB_PATH=/app/data/database.sqlite
-```
-3. Build and start docker container in detached mode using Docker Compose:
-```bash
-docker compose up -d --build
-```
-4. make sure server environment exposes port `3000` (or one you specified in .env)
-to your reverse proxy (e.g., NGINX) and is secured behind HTTPS.
+   Set up a CORS policy using a comma-separated string of domain names:
+   ```env
+   ALLOWED_CORS_DOMAINS=http://localhost:5173,https://your-frontend-domain.com
+   ```
+   Optionally override the default server port and database path:
+   ```env
+   PORT=3000
+   DB_PATH=/app/data/database.sqlite
+   ```
+3. Build and start the Docker container using Docker Compose:
+   ```bash
+   docker compose up -d --build
+   ```
+4. Make sure the server environment exposes port `3000` (or the one specified in `.env`) to your reverse proxy (e.g., NGINX) and is secured behind HTTPS.
