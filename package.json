@@ -1,0 +1,19 @@
+{
+  "name": "sgg-hero-configurator",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "prepare": "npm run build --workspace=@hero_manager/shared",
+    "build:shared": "npm run build --workspace=@hero_manager/shared",
+    "build:server": "npm run build --workspace=hero_manager_server",
+    "build:client": "npm run build --workspace=hero_manager_client",
+    "build": "npm run build:shared && npm run build:server && npm run build:client",
+    "dev:client": "npm run dev --workspace=hero_manager_client",
+    "dev:server": "npm run dev_server --workspace=hero_manager_server"
+  }
+}

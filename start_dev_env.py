@@ -33,11 +33,8 @@ def main():
         pause_and_exit(1)
 
     try:
-        print("📦 Installing/Updating server dependencies...")
-        subprocess.run('npm install', cwd=server_dir, shell=True, check=True)
-
-        print("📦 Installing/Updating client dependencies...")
-        subprocess.run('npm install', cwd=client_dir, shell=True, check=True)
+        print("📦 Installing/Updating workspace dependencies...")
+        subprocess.run('npm install', cwd=root_dir, shell=True, check=True)
 
         print("🏗️  Building and Starting Server container (this may take a moment)...")
         if not os.path.exists(os.path.join(server_dir, '.env')):

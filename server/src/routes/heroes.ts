@@ -1,15 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
-import { z } from 'zod';
 import {
-	NAME_REGEX,
-	SPECIAL_SKILL_ID_REGEX,
-	UUID_REGEX,
-	MAX_STRING_LENGTH,
-	MIN_NUMERIC_VALUE,
-	MAX_NUMERIC_VALUE,
+	HeroQuerySchema,
+	HeroParamsSchema,
+	CreateHeroBodySchema,
+	UpdateHeroBodySchema,
 	HEARTBEAT_SEND_RATE_SECONDS
-} from '../constants.js';
+} from '@hero_manager/shared';
 import {
 	dbCreateHero,
 	dbGetHeroesSince,
@@ -21,30 +18,6 @@ import {
 import { writeLog } from './auth.js';
 import { requireAuth } from '../middlewares/auth.js';
 import { validateRequest } from '../middlewares/validate.js';
-
-// Schemas
-export const HeroQuerySchema = z.object({
-	lastUpdated: z.coerce.number().int().min(0)
-});
-
-export const HeroParamsSchema = z.object({
-	uuid: z.string().regex(UUID_REGEX)
-});
-
-export const CreateHeroBodySchema = z.object({
-	name: z.string().min(1).max(MAX_STRING_LENGTH).regex(NAME_REGEX),
-	special_skill_id: z.string().min(1).max(MAX_STRING_LENGTH).regex(SPECIAL_SKILL_ID_REGEX),
-	attack: z.coerce.number().int().min(MIN_NUMERIC_VALUE).max(MAX_NUMERIC_VALUE),
-	defense: z.coerce.number().int().min(MIN_NUMERIC_VALUE).max(MAX_NUMERIC_VALUE)
-});
-
-export const UpdateHeroBodySchema = z.object({
-	name: z.string().min(1).max(MAX_STRING_LENGTH).regex(NAME_REGEX),
-	special_skill_id: z.string().min(1).max(MAX_STRING_LENGTH).regex(SPECIAL_SKILL_ID_REGEX),
-	attack: z.coerce.number().int().min(MIN_NUMERIC_VALUE).max(MAX_NUMERIC_VALUE),
-	defense: z.coerce.number().int().min(MIN_NUMERIC_VALUE).max(MAX_NUMERIC_VALUE),
-	status: z.enum(['active', 'deleted'])
-});
 
 // Heartbeat and outside updates
 

@@ -2,8 +2,8 @@ import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { Hero } from '../interfaces';
 import {
-	ALLOWED_NAME_CHARACTERS,
-	ALLOWED_SPECIAL_ID_CHARACTERS,
+	NAME_REGEX,
+	SPECIAL_SKILL_ID_REGEX,
 	MAX_ATTACK_SLIDER_AMOUNT,
 	MAX_DEFENSE_SLIDER_AMOUNT,
 	MAX_ATTACK_DEFENSE_VALUE,
@@ -133,23 +133,17 @@ export class HeroFormDialog extends LitElement {
 	}
 
 	private isNameValid() {
-		if (!this.name) {
+		if (!this.name || this.name.length > MAX_STRING_LENGTH) {
 			return false;
 		}
-		if (this.name.length > MAX_STRING_LENGTH) {
-			return false;
-		}
-		return this.name.split('').every(char => ALLOWED_NAME_CHARACTERS.includes(char));
+		return NAME_REGEX.test(this.name);
 	}
 
 	private isSpecialSkillValid() {
-		if (!this.special_skill_id) {
+		if (!this.special_skill_id || this.special_skill_id.length > MAX_STRING_LENGTH) {
 			return false;
 		}
-		if (this.special_skill_id.length > MAX_STRING_LENGTH) {
-			return false;
-		}
-		return this.special_skill_id.split('').every(char => ALLOWED_SPECIAL_ID_CHARACTERS.includes(char));
+		return SPECIAL_SKILL_ID_REGEX.test(this.special_skill_id);
 	}
 
 	private isValid() {

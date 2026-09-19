@@ -1,7 +1,8 @@
 {
-  "name": "sgg_test",
+  "name": "hero_manager_server",
   "version": "1.0.0",
   "scripts": {
+    "build": "tsc",
     "dev_server": "docker compose up -d --build"
   },
   "keywords": [],
@@ -10,6 +11,7 @@
   "type": "module",
   "description": "",
   "dependencies": {
+    "@hero_manager/shared": "*",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "express": "^5.2.1",

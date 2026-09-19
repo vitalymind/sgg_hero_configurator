@@ -1,12 +1,9 @@
-export interface Hero {
+import type { Hero as SharedHero } from '@hero_manager/shared';
+
+export type Hero = Omit<SharedHero, 'uuid'> & {
 	id?: number;
 	uuid: string | null;
-	name: string;
-	attack: number;
-	defense: number;
-	special_skill_id: string;
-	status: 'active' | 'deleted';
-}
+};
 
 export interface HeroesSyncResponse {
 	lastUpdated: number;

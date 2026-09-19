@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import crypto from 'crypto';
-import { z } from 'zod';
-import { SESSION_LENGTH_MINUTES } from '../constants.js';
+import { SESSION_LENGTH_MINUTES, LoginSchema, VerifyOtpSchema } from '@hero_manager/shared';
 import { dbGetSession, dbDeleteSession, dbCreateOrUpdateSession } from '../database.js';
 import { validateRequest } from '../middlewares/validate.js';
 import { requireAuth } from '../middlewares/auth.js';
@@ -12,16 +11,6 @@ const maxSessionAge = SESSION_LENGTH_MINUTES * 60 * 1000;
 
 // Mockup auth configuration
 const whitelistedEmails: string[] = ["user@email.com", "user2@email.com"];
-
-// Schemas
-export const LoginSchema = z.object({
-	email: z.string().email()
-});
-
-export const VerifyOtpSchema = z.object({
-	email: z.string().email(),
-	otp: z.string().min(1)
-});
 
 /*
 	Simple OTP flow
