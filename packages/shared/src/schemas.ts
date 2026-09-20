@@ -5,6 +5,7 @@ import {
 	SPECIAL_SKILL_ID_REGEX,
 	UUID_REGEX,
 	MAX_STRING_LENGTH,
+	MAX_USER_NAME_LENGTH,
 	MIN_NUMERIC_VALUE,
 	MAX_NUMERIC_VALUE,
 	HERO_STATUSES
@@ -72,7 +73,7 @@ export const SignUpSchema = z.object({
 	name: z.string()
 		.trim()
 		.min(1, 'Name is required')
-		.max(MAX_STRING_LENGTH, `Name must not exceed ${MAX_STRING_LENGTH} characters`)
+		.max(MAX_USER_NAME_LENGTH, `Name must not exceed ${MAX_USER_NAME_LENGTH} characters`)
 		.regex(USER_NAME_REGEX, 'Name contains invalid characters'),
 	email: z.string().trim().min(1, 'Email is required').email('Please enter a valid email address')
 });

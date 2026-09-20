@@ -4,6 +4,7 @@ export const SPECIAL_SKILL_ID_REGEX = /^[a-z0-9_\-]+$/;
 export const UUID_REGEX = /^[a-z0-9\-]+$/;
 
 export const MAX_STRING_LENGTH = 50;
+export const MAX_USER_NAME_LENGTH = 25;
 export const MIN_NUMERIC_VALUE = 0;
 export const MAX_NUMERIC_VALUE = 1000;
 export const MAX_ATTACK_DEFENSE_VALUE = 1000;

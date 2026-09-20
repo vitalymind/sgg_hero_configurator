@@ -8,7 +8,6 @@ import {
 } from '@hero_manager/shared';
 import {
 	MAX_SESSION_AGE_MS,
-	maxSessionAge,
 	OTP_EXPIRY_MS,
 	OTP_COOLDOWN_MS,
 	MAX_OTP_ATTEMPTS,
@@ -24,7 +23,8 @@ import {
 	dbDeleteOtp,
 	dbIncrementOtpAttempts,
 	dbGetUserByEmail,
-	dbCreateOrUpdateUser
+	dbCreateUser,
+	dbUpdateUserLastLogin
 } from '../database.js';
 import { validateRequest } from '../middlewares/validate.js';
 import { requireAuth } from '../middlewares/auth.js';
@@ -36,49 +36,19 @@ export function generateOtp(): string {
 }
 
 // Logging activity
-export function writeLog(db: DatabaseSync, log: string, token: string = ""): void {
+export function writeLog(db: DatabaseSync, log: string, tokenOrEmail: string = ""): void {
 	let user = "";
-	if (token !== "") {
-		const session = dbGetSession(db, token);
-		if (session) {
-			user = session.email;
+	if (tokenOrEmail !== "") {
+		if (tokenOrEmail.includes('@')) {
+			user = tokenOrEmail;
+		} else {
+			const session = dbGetSession(db, tokenOrEmail);
+			if (session) {
+				user = session.email;
+			}
 		}
 	}
 	console.log(`${log}${user !== '' ? ', User email: ' + user : ''}`);
-}
-
-// Session handling with http cookie
-export function isValidSession(db: DatabaseSync, token: string, res: Response): boolean {
-	const session = dbGetSession(db, token);
-
-	if (!session) {
-		return false;
-	}
-
-	if (Date.now() > session.expiresAt) {
-		writeLog(db, `[AUTH]: Session with ${session.email} has expired, re-login required`);
-		dbDeleteSession(db, token);
-		return false;
-	}
-
-	refreshSession(db, token, res);
-
-	return true;
-}
-
-export function refreshSession(db: DatabaseSync, token: string, res: Response): void {
-	const sessionData = dbGetSession(db, token);
-	if (sessionData) {
-		sessionData.expiresAt = Date.now() + maxSessionAge;
-		dbCreateOrUpdateSession(db, token, sessionData.email, sessionData.expiresAt);
-		res.cookie('auth_token', token, {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'lax',
-			domain: process.env.COOKIE_DOMAIN || undefined,
-			maxAge: maxSessionAge
-		});
-	}
 }
 
 export function createAuthRouter(
@@ -96,14 +66,10 @@ export function createAuthRouter(
 	});
 
 	router.get('/connect', requireAuth(db), (_req: Request, res: Response) => {
-		return res.status(200).end();
+		return res.status(200).json({ user: res.locals.user });
 	});
 
-	router.post(
-		'/signup',
-		authIpRateLimiter,
-		validateRequest({ body: SignUpSchema }),
-		async (req: Request, res: Response) => {
+	router.post('/signup', authIpRateLimiter, validateRequest({ body: SignUpSchema }), async (req: Request, res: Response) => {
 			const { email, name } = req.body;
 
 			// Per-email 60s cooldown check
@@ -120,14 +86,17 @@ export function createAuthRouter(
 				}
 			}
 
+			const existingUser = dbGetUserByEmail(db, email);
+			const finalName = existingUser?.name || name;
+
 			const otp = generateOtp();
 			const expiresAt = Date.now() + OTP_EXPIRY_MS;
-			dbSaveOtp(db, email, otp, name, expiresAt);
+			dbSaveOtp(db, email, otp, finalName, expiresAt);
 
-			log(`[AUTH]: Generating signup OTP for ${email} (${name})`);
+			log(`[AUTH]: Generating signup OTP for ${email} (${finalName})`);
 
 			try {
-				await emailService.sendOtp(email, otp, { name });
+				await emailService.sendOtp(email, otp, { name: finalName });
 			} catch (error) {
 				console.error(`[AUTH]: Failed to deliver OTP to ${email}:`, error);
 			}
@@ -137,11 +106,7 @@ export function createAuthRouter(
 		}
 	);
 
-	router.post(
-		'/login',
-		authIpRateLimiter,
-		validateRequest({ body: LoginSchema }),
-		async (req: Request, res: Response) => {
+	router.post('/login', authIpRateLimiter, validateRequest({ body: LoginSchema }), async (req: Request, res: Response) => {
 			const { email } = req.body;
 
 			// Per-email 60s cooldown check
@@ -159,8 +124,12 @@ export function createAuthRouter(
 			}
 
 			const existingUser = dbGetUserByEmail(db, email);
-			const name = existingUser?.name;
+			if (!existingUser) {
+				log(`[AUTH]: Login attempt with non-existent email: ${email}`);
+				return res.status(200).json({ message: "Verification code sent" });
+			}
 
+			const name = existingUser.name;
 			const otp = generateOtp();
 			const expiresAt = Date.now() + OTP_EXPIRY_MS;
 			dbSaveOtp(db, email, otp, name, expiresAt);
@@ -173,7 +142,6 @@ export function createAuthRouter(
 				console.error(`[AUTH]: Failed to deliver OTP to ${email}:`, error);
 			}
 
-			// Anti-enumeration: always return 200 generic success message
 			return res.status(200).json({ message: "Verification code sent" });
 		}
 	);
@@ -215,20 +183,25 @@ export function createAuthRouter(
 		// Valid OTP
 		dbDeleteOtp(db, email);
 
-		const emailPrefix = email.split('@')[0] ?? 'User';
-		const userName = storedData.name || emailPrefix;
-		const user = dbCreateOrUpdateUser(db, email, userName);
+		let user = dbGetUserByEmail(db, email);
+		if (!user) {
+			const emailPrefix = email.split('@')[0] ?? 'User';
+			const userName = storedData.name || emailPrefix;
+			user = dbCreateUser(db, email, userName);
+		} else {
+			dbUpdateUserLastLogin(db, email);
+		}
 
 		log(`[AUTH]: ${email} successfully authenticated`);
 
 		const sessionToken = crypto.randomUUID();
-		dbCreateOrUpdateSession(db, sessionToken, email, Date.now() + maxSessionAge);
+		dbCreateOrUpdateSession(db, sessionToken, email, Date.now() + MAX_SESSION_AGE_MS);
 		res.cookie('auth_token', sessionToken, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'lax',
 			domain: process.env.COOKIE_DOMAIN || undefined,
-			maxAge: maxSessionAge
+			maxAge: MAX_SESSION_AGE_MS
 		});
 
 		return res.status(200).json({
@@ -239,15 +212,27 @@ export function createAuthRouter(
 
 	router.post('/logout', (req: Request, res: Response) => {
 		const token = req.cookies?.auth_token;
+		let email: string | undefined;
+
 		if (token) {
+			const session = dbGetSession(db, token);
+			email = session?.email;
 			dbDeleteSession(db, token);
 		}
+
 		res.clearCookie('auth_token', {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'lax',
 			domain: process.env.COOKIE_DOMAIN || undefined
 		});
+
+		if (email) {
+			log(`[AUTH]: ${email} successfully logged out`);
+		} else {
+			log(`[AUTH]: Logout requested with no active session`);
+		}
+
 		return res.status(200).json({ message: "Logged out" });
 	});
 

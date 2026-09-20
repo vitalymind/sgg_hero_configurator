@@ -132,17 +132,24 @@ export function dbGetUserByEmail(db: DatabaseSync, email: string): DbUser | unde
 	return stmt.get(email) as unknown as DbUser | undefined;
 }
 
-export function dbCreateOrUpdateUser(db: DatabaseSync, email: string, name: string): DbUser {
+export function dbCreateUser(db: DatabaseSync, email: string, name: string): DbUser {
 	const now = getTimeStamp();
 	const stmt = db.prepare(`
 		INSERT INTO users (email, name, created_at, last_login)
 		VALUES (?, ?, ?, ?)
-		ON CONFLICT(email) DO UPDATE SET 
-			name = CASE WHEN excluded.name != '' THEN excluded.name ELSE users.name END,
-			last_login = excluded.last_login
 		RETURNING id, email, name, created_at, last_login
 	`);
 	return stmt.get(email, name, now, now) as unknown as DbUser;
+}
+
+export function dbUpdateUserLastLogin(db: DatabaseSync, email: string): void {
+	const now = getTimeStamp();
+	const stmt = db.prepare(`
+		UPDATE users
+		SET last_login = ?
+		WHERE email = ?
+	`);
+	stmt.run(now, email);
 }
 
 // OTP Operations

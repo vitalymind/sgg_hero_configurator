@@ -23,7 +23,9 @@ export const mockHeroes: Hero[] = [
 export const handlers = [
 	// Health / Connect handshake
 	http.get('*/api/connect', () => {
-		return new HttpResponse(null, { status: 200 });
+		return HttpResponse.json({
+			user: { email: 'developer@company.com', name: 'Developer' }
+		}, { status: 200 });
 	}),
 
 	// Login request OTP
@@ -39,6 +41,11 @@ export const handlers = [
 	// Login verify OTP
 	http.post('*/api/login/verify', () => {
 		return HttpResponse.json({ message: 'Authenticated' });
+	}),
+
+	// Logout
+	http.post('*/api/logout', () => {
+		return HttpResponse.json({ message: 'Logged out' });
 	}),
 
 	// Fetch heroes (delta sync)

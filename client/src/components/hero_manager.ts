@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { state, query } from 'lit/decorators.js';
+import { property, state, query } from 'lit/decorators.js';
 import { STATE_SYNCING_DATA } from '../constants';
 import { HeroSyncController } from '../services/hero_sync_controller';
 import { HeroList } from './hero_list';
@@ -18,6 +18,8 @@ export class HeroManager extends LitElement {
 	}
 
 	readonly sync = new HeroSyncController(this);
+
+	@property({ type: Object }) currentUser: { name: string; email: string } | null = null;
 
 	@state() private filterQuery = '';
 	@state() private isDialogOpen = false;
@@ -82,11 +84,13 @@ export class HeroManager extends LitElement {
 			<hero-list 
 				.heroes="${visibleHeroes}"
 				.filterQuery="${this.filterQuery}"
+				.currentUser="${this.currentUser}"
 				@filter-changed="${this.handleFilterChanged}"
 				@refresh-heroes="${() => this.sync.fetchHeroes(false)}"
 				@refresh-heroes-cache="${() => this.sync.fetchHeroesClearCache(false)}"
 				@create-hero="${this.handleCreateHero}"
 				@edit-hero="${this.handleEditHero}"
+				@logout="${() => this.dispatchEvent(new CustomEvent('logout'))}"
 			></hero-list>
 
 			<hero-form-dialog

@@ -413,8 +413,14 @@ export class StatusScreenCover extends LitElement {
 								?disabled=${isSending}
 								.value=${this.nameInput}
 								@input=${this.handleNameInput}
-								@keydown=${(e: KeyboardEvent) =>
-									e.key === 'Enter' && this.isSignUpValid && !isSending && this.handleSignUp()}
+								@keydown=${(e: KeyboardEvent) => {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										if (this.isSignUpValid && !isSending) {
+											this.handleSignUp();
+										}
+									}
+								}}
 							/>
 							${nameError ? html`<span class="error-msg">${nameError}</span>` : ''}
 						</div>
@@ -430,10 +436,22 @@ export class StatusScreenCover extends LitElement {
 					?disabled=${isSending}
 					.value=${this.emailInput}
 					@input=${this.handleEmailInput}
-					@keydown=${(e: KeyboardEvent) =>
-						e.key === 'Enter' &&
-						!isSending &&
-						(isLogin ? this.isEmailValid && this.handleSendOtp() : this.isSignUpValid && this.handleSignUp())}
+					@keydown=${(e: KeyboardEvent) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							if (!isSending) {
+								if (isLogin) {
+									if (this.isEmailValid) {
+										this.handleSendOtp();
+									}
+								} else {
+									if (this.isSignUpValid) {
+										this.handleSignUp();
+									}
+								}
+							}
+						}
+					}}
 				/>
 				${emailError ? html`<span class="error-msg">${emailError}</span>` : ''}
 			</div>
@@ -442,6 +460,7 @@ export class StatusScreenCover extends LitElement {
 				${isLogin
 					? html`
 							<button
+								type="button"
 								class="primary retry-btn"
 								?disabled=${!this.isEmailValid || isSending}
 								@click=${this.handleSendOtp}
@@ -454,6 +473,7 @@ export class StatusScreenCover extends LitElement {
 					  `
 					: html`
 							<button
+								type="button"
 								class="primary"
 								?disabled=${!this.isSignUpValid || isSending}
 								@click=${this.handleSignUp}
@@ -496,8 +516,14 @@ export class StatusScreenCover extends LitElement {
 					.value=${this.otpInput}
 					@input=${this.handleOtpInput}
 					@paste=${this.handleOtpPaste}
-					@keydown=${(e: KeyboardEvent) =>
-						e.key === 'Enter' && this.isOtpValid && !isVerifying && this.handleVerifyOtp()}
+					@keydown=${(e: KeyboardEvent) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							if (this.isOtpValid && !isVerifying) {
+								this.handleVerifyOtp();
+							}
+						}
+					}}
 				/>
 				${displayError ? html`<span class="error-msg">${displayError}</span>` : ''}
 			</div>
@@ -519,6 +545,7 @@ export class StatusScreenCover extends LitElement {
 						${this.resendCountdown > 0 ? `Resend in ${this.resendCountdown}s` : 'Resend Code'}
 					</button>
 					<button
+						type="button"
 						class="primary retry-btn"
 						?disabled=${!this.isOtpValid || isVerifying}
 						@click=${this.handleVerifyOtp}
@@ -538,6 +565,7 @@ export class StatusScreenCover extends LitElement {
 	private renderRetryButton(label = 'Retry'): TemplateResult {
 		return html`
 			<button
+				type="button"
 				class="primary retry-btn"
 				?disabled=${this.isRetrying}
 				@click=${() => this.dispatchEvent(new CustomEvent('retry'))}
@@ -581,7 +609,7 @@ export class StatusScreenCover extends LitElement {
 			<h2>Session expired ⏱️</h2>
 			<p>Please log in again.</p>
 			<div class="dialog-actions">
-				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('relog'))}>Log In</button>
+				<button type="button" class="primary" @click=${() => this.dispatchEvent(new CustomEvent('relog'))}>Log In</button>
 			</div>
 		`;
 	}

@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { HeroCard } from './hero_card';
 import { Hero } from '@hero_manager/shared';
@@ -13,6 +13,7 @@ export class HeroList extends LitElement {
 
 	@property({ type: Array }) heroes: Hero[] = [];
 	@property({ type: String }) filterQuery = '';
+	@property({ type: Object }) currentUser: { name: string; email: string } | null = null;
 
 	clean(): void { }
 
@@ -57,6 +58,27 @@ export class HeroList extends LitElement {
 		.control-actions {
 			display: flex;
 			gap: 10px;
+			align-items: center;
+		}
+
+		.user-info {
+			display: flex;
+			flex-direction: column;
+			margin-left: 14px;
+			margin-right: 4px;
+			text-align: left;
+			line-height: 1.25;
+		}
+
+		.user-name {
+			font-weight: bold;
+			font-size: 14px;
+			color: black;
+		}
+
+		.user-email {
+			font-size: 12px;
+			color: #6b7280;
 		}
 
 		.hero-grid {
@@ -82,6 +104,13 @@ export class HeroList extends LitElement {
 			.control-actions {
 				flex-direction: column;
 				align-items: stretch;
+			}
+			.user-info {
+				margin-left: 0;
+				margin-right: 0;
+				padding: 4px 0;
+				text-align: center;
+				align-items: center;
 			}
 			.filter-input {
 				width: auto;
@@ -114,6 +143,15 @@ export class HeroList extends LitElement {
 						<button class="refresh-btn" @click="${() => this.dispatchEvent(new CustomEvent('create-hero'))}">➕ Add hero</button>
 						<button class="refresh-btn" @click="${() => this.dispatchEvent(new CustomEvent('refresh-heroes'))}">🔄 Refresh</button>
 						<button class="refresh-btn" @click="${() => this.dispatchEvent(new CustomEvent('refresh-heroes-cache'))}">🧼 Clear cache</button>
+						${this.currentUser
+							? html`
+									<div class="user-info">
+										<span class="user-name">${this.currentUser.name}</span>
+										<span class="user-email">${this.currentUser.email}</span>
+									</div>
+							  `
+							: nothing}
+						<button class="refresh-btn" @click="${() => this.dispatchEvent(new CustomEvent('logout'))}">🚪 Log out</button>
 					</div>
 				</div>
 

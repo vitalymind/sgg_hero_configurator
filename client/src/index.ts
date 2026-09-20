@@ -33,6 +33,8 @@ export class HeroConfigurator extends LitElement {
 	@state() private isRetrying = false;
 	@state() private otpErrorMessage = '';
 	@state() private authErrorMessage = '';
+	@state() private currentUser: { name: string; email: string } | null = null;
+	private isSubmittingAuth = false;
 
 	@query('hero-manager') manager?: HeroManager;
 	@query('status-screen-cover') statusCover?: StatusScreenCover;
@@ -62,13 +64,35 @@ export class HeroConfigurator extends LitElement {
 				  `
 				: html`
 						<hero-manager
+							.currentUser=${this.currentUser}
 							@fatal-error=${(e: CustomEvent) => {
 								this.loadingState = e.detail;
 								this.showStatusCover = true;
 							}}
+							@logout=${this.handleLogout}
 						></hero-manager>
 				  `}
 		`;
+	}
+
+	private async handleLogout(): Promise<void> {
+		if (this.isSubmittingAuth) {
+			return;
+		}
+		this.isSubmittingAuth = true;
+		try {
+			await fetch(`${API_BASE_URL}/api/logout`, {
+				method: 'POST',
+				credentials: 'include'
+			});
+		} catch (error) {
+			console.error('Logout request failed', error);
+		} finally {
+			this.clean();
+			this.loadingState = STATE_AUTH_EMAIL;
+			this.showStatusCover = true;
+			this.isSubmittingAuth = false;
+		}
 	}
 
 	private clean() {
@@ -78,8 +102,10 @@ export class HeroConfigurator extends LitElement {
 		if (this.statusCover) {
 			this.statusCover.clean();
 		}
+		this.currentUser = null;
 		this.otpErrorMessage = '';
 		this.authErrorMessage = '';
+		this.isSubmittingAuth = false;
 	}
 
 	private async restartApp(): Promise<void> {
@@ -107,15 +133,23 @@ export class HeroConfigurator extends LitElement {
 		try {
 			const result = await fetch(`${API_BASE_URL}/api/connect`, { credentials: 'include' });
 			if (result.status === 200) {
+				const data = (await result.json().catch(() => ({}))) as { user?: { email: string; name: string } | null };
+				if (data.user) {
+					this.currentUser = data.user;
+				}
 				this.showStatusCover = false;
 			} else if (result.status === 401) {
+				this.currentUser = null;
 				this.loadingState = STATE_AUTH_EMAIL;
 			} else if (result.status === 403) {
+				this.currentUser = null;
 				this.loadingState = STATE_CERT_MISSING;
 			} else {
+				this.currentUser = null;
 				this.loadingState = STATE_CONNECTING_FAILED;
 			}
 		} catch (error: unknown) {
+			this.currentUser = null;
 			this.loadingState = STATE_CONNECTING_FAILED;
 			if (error instanceof Error) {
 				console.error(error.message);
@@ -126,12 +160,16 @@ export class HeroConfigurator extends LitElement {
 	}
 
 	private async handleSendOtp(e: CustomEvent) {
+		if (this.isSubmittingAuth) {
+			return;
+		}
 		const parseResult = LoginSchema.safeParse(e.detail);
 		if (!parseResult.success) {
 			this.authErrorMessage = parseResult.error.issues[0]?.message || 'Please enter a valid email address';
 			return;
 		}
 
+		this.isSubmittingAuth = true;
 		const { email } = parseResult.data;
 		const isAlreadyOnOtp = this.loadingState === STATE_AUTH_OTP || this.loadingState === STATE_AUTH_VERIFYING;
 
@@ -167,16 +205,22 @@ export class HeroConfigurator extends LitElement {
 		} catch (error) {
 			console.error('Failed to send OTP', error);
 			this.loadingState = STATE_FATAL_NETWORK;
+		} finally {
+			this.isSubmittingAuth = false;
 		}
 	}
 
 	private async handleSignUp(e: CustomEvent) {
+		if (this.isSubmittingAuth) {
+			return;
+		}
 		const parseResult = SignUpSchema.safeParse(e.detail);
 		if (!parseResult.success) {
 			this.authErrorMessage = parseResult.error.issues[0]?.message || 'Please check the form for errors';
 			return;
 		}
 
+		this.isSubmittingAuth = true;
 		const { email, name } = parseResult.data;
 		const isAlreadyOnOtp = this.loadingState === STATE_AUTH_OTP || this.loadingState === STATE_AUTH_VERIFYING;
 
@@ -212,10 +256,15 @@ export class HeroConfigurator extends LitElement {
 		} catch (error) {
 			console.error('Failed to sign up', error);
 			this.loadingState = STATE_FATAL_NETWORK;
+		} finally {
+			this.isSubmittingAuth = false;
 		}
 	}
 
 	private async handleVerifyOtp(e: CustomEvent) {
+		if (this.isSubmittingAuth) {
+			return;
+		}
 		const parseResult = VerifyOtpSchema.safeParse(e.detail);
 		if (!parseResult.success) {
 			this.loadingState = STATE_AUTH_OTP;
@@ -223,6 +272,7 @@ export class HeroConfigurator extends LitElement {
 			return;
 		}
 
+		this.isSubmittingAuth = true;
 		this.loadingState = STATE_AUTH_VERIFYING;
 		this.otpErrorMessage = '';
 		const { email, otp } = parseResult.data;
@@ -236,6 +286,10 @@ export class HeroConfigurator extends LitElement {
 			});
 
 			if (result.ok) {
+				const data = (await result.json().catch(() => ({}))) as { user?: { email: string; name: string } | null };
+				if (data.user) {
+					this.currentUser = data.user;
+				}
 				this.showStatusCover = false;
 				this.otpErrorMessage = '';
 			} else if (result.status >= 500) {
@@ -248,6 +302,8 @@ export class HeroConfigurator extends LitElement {
 		} catch (error) {
 			console.error('Failed to verify OTP', error);
 			this.loadingState = STATE_FATAL_NETWORK;
+		} finally {
+			this.isSubmittingAuth = false;
 		}
 	}
 }
