@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { Hero } from '../interfaces';
+import { Hero, DraftHero } from '../interfaces';
 import {
 	CreateHeroBodySchema,
 	MAX_ATTACK_SLIDER_AMOUNT,
@@ -226,14 +226,18 @@ export class HeroFormDialog extends LitElement {
 			return;
 		}
 
-		const heroData: Hero = {
-			uuid: this.editingHero ? this.editingHero.uuid : null,
+		const baseData = {
 			name: result.data.name,
 			attack: result.data.attack,
 			defense: result.data.defense,
 			special_skill_id: result.data.special_skill_id,
 			status: this.editingHero?.status || 'active'
 		};
+
+		const heroData: Hero | DraftHero = this.editingHero
+			? { ...baseData, uuid: this.editingHero.uuid }
+			: baseData;
+
 		this.dispatchEvent(new CustomEvent('save-hero', { detail: heroData }));
 	}
 
@@ -257,7 +261,7 @@ export class HeroFormDialog extends LitElement {
 			return html`
 				<h1>Edit Hero</h1>
 				<span class="uuid-span">uuid: ${this.editingHero.uuid}
-					<span class="uuid-span-copy" @click="${() => navigator.clipboard.writeText(this.editingHero ? this.editingHero.uuid! : '')}">📋</span>
+					<span class="uuid-span-copy" @click="${() => navigator.clipboard.writeText(this.editingHero ? this.editingHero.uuid : '')}">📋</span>
 				</span>
 			`;
 		}

@@ -1,17 +1,12 @@
-import type { Hero as SharedHero } from '@hero_manager/shared';
+import type {
+	Hero as SharedHero,
+	HeroesSyncResponse as SharedHeroesSyncResponse,
+	LocalStorageCache as SharedLocalStorageCache
+} from '@hero_manager/shared';
 
-export type Hero = Omit<SharedHero, 'uuid'> & {
-	id?: number;
-	uuid: string | null;
-};
+export type Hero = SharedHero;
 
-export interface HeroesSyncResponse {
-	lastUpdated: number;
-	heroes: Hero[];
-	activeUuids: string[];
-}
+export type DraftHero = Omit<Hero, 'uuid' | 'id'>;
 
-export interface LocalStorageCache {
-	lastUpdated: number;
-	heroes: Hero[];
-}
+export type HeroesSyncResponse = SharedHeroesSyncResponse;
+export type LocalStorageCache = SharedLocalStorageCache;
