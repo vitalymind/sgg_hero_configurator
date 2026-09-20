@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { state, query } from 'lit/decorators.js';
-import { Hero, LocalStorageCache, HeroesSyncResponse } from '../interfaces';
+import { Hero, LocalStorageCache } from '../interfaces';
 import {
 	LOCAL_STORAGE_CACHE_KEY,
 	STATE_FATAL_NETWORK,

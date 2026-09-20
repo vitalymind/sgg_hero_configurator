@@ -7,8 +7,9 @@ import {
 	LOCAL_STORAGE_CACHE_KEY,
 	STATE_FATAL_NETWORK,
 	HEARTBEAT_TIMEOUT_SECONDS,
+	STATE_FATAL_SERVER,
 } from '../../src/constants';
-import { Hero, HeroesSyncResponse } from '../../src/interfaces';
+import { Hero } from '../../src/interfaces';
 
 describe('HeroManager sync and cache logic', () => {
 	let manager: HeroManager;
@@ -103,5 +104,23 @@ describe('HeroManager sync and cache logic', () => {
 		expect(fatalSpy).toHaveBeenCalledTimes(1);
 		expect(fatalSpy.mock.calls[0][0].detail).toBe(STATE_FATAL_NETWORK);
 		expect(sseInstance.readyState).toBe(2); // 2 = CLOSED
+	});
+
+	it('dispatches fatal-error when server returns 500 error', async () => {
+		// Temporarily override /api/heroes to return 500 for this test only
+		server.use(
+			http.get('*/api/heroes', () => {
+				return new HttpResponse(null, { status: 500 });
+			})
+		);
+
+		const fatalSpy = vi.fn();
+		manager.addEventListener('fatal-error', fatalSpy);
+
+		document.body.appendChild(manager);
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		expect(fatalSpy).toHaveBeenCalledTimes(1);
+		expect(fatalSpy.mock.calls[0][0].detail).toBe(STATE_FATAL_SERVER);
 	});
 });
