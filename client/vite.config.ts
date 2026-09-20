@@ -29,5 +29,8 @@ export default defineConfig({
 		environment: 'happy-dom',
 		setupFiles: ['./tests/setup.ts'],
 		include: ['tests/**/*.test.ts'],
+		coverage: {
+			include: ['src/**'], // <-- Only measure production code in src/
+		}
 	}
 });

@@ -117,4 +117,120 @@ describe('HeroFormDialog component', () => {
 		expect(deleteSpy).toHaveBeenCalledTimes(1);
 		expect(deleteSpy.mock.calls[0][0].detail).toEqual(mockHero);
 	});
+
+	it('updates name and special skill when user types into inputs', async () => {
+		element.isOpen = true;
+		await element.updateComplete;
+
+		// Type name
+		const inputs = element.shadowRoot?.querySelectorAll('.form-group input[type="text"]') as
+			NodeListOf<HTMLInputElement>;
+		const nameInput = inputs[0];
+		nameInput.value = 'Lancelot';
+		nameInput.dispatchEvent(new Event('input'));
+
+		// Type special skill
+		const skillInput = inputs[inputs.length - 1];
+		skillInput.value = 'holy_light';
+		skillInput.dispatchEvent(new Event('input'));
+		await element.updateComplete;
+
+		// After typing valid name and skill, save button should become enabled
+		const saveButton = element.shadowRoot?.querySelector('button.primary') as HTMLButtonElement;
+		expect(saveButton.disabled).toBe(false);
+	});
+
+	it('clamps attack to 1000 and rejects non-digits', async () => {
+		element.isOpen = true;
+		await element.updateComplete;
+
+		const attackInputs = element.shadowRoot?.querySelectorAll('.slider-group input[type="text"]') as
+			NodeListOf<HTMLInputElement>;
+		const attackInput = attackInputs[0];
+
+		// Typing 9999 -> should clamp to MAX_ATTACK_DEFENSE_VALUE (1000)
+		attackInput.value = '9999';
+		attackInput.dispatchEvent(new Event('input'));
+		await element.updateComplete;
+		expect(attackInput.value).toBe('1000');
+
+		// Typing non-digit letters -> should reject and revert to last valid (1000)
+		attackInput.value = 'abc';
+		attackInput.dispatchEvent(new Event('input'));
+		await element.updateComplete;
+		expect(attackInput.value).toBe('1000');
+
+		// Empty string -> resets to 0
+		attackInput.value = '';
+		attackInput.dispatchEvent(new Event('input'));
+		await element.updateComplete;
+	});
+
+	it('updates values when moving attack and defense sliders', async () => {
+		element.isOpen = true;
+		await element.updateComplete;
+
+		const sliders = element.shadowRoot?.querySelectorAll('input[type="range"]') as NodeListOf<HTMLInputElement>;
+		sliders[0].value = '75';
+		sliders[0].dispatchEvent(new Event('input'));
+
+		sliders[1].value = '85';
+		sliders[1].dispatchEvent(new Event('input'));
+		await element.updateComplete;
+
+		const textInputs = element.shadowRoot?.querySelectorAll('.slider-group input[type="text"]') as
+			NodeListOf<HTMLInputElement>;
+		expect(textInputs[0].value).toBe('75');
+		expect(textInputs[1].value).toBe('85');
+	});
+
+	it('cancels deletion when clicking Cancel in confirm dialog', async () => {
+		element.editingHero = {
+			uuid: '99999999-9999-9999-9999-999999999999',
+			name: 'Mordred',
+			attack: 50,
+			defense: 50,
+			special_skill_id: 'slash',
+			status: 'active',
+		};
+		element.isOpen = true;
+		await element.updateComplete;
+
+		// Open confirm dialog
+		const deleteBtn = element.shadowRoot?.querySelector('button.delete') as HTMLButtonElement;
+		deleteBtn.click();
+		await element.updateComplete;
+
+		// Click Cancel
+		const cancelBtn = element.shadowRoot?.querySelector('.dialog-actions button') as HTMLButtonElement;
+		cancelBtn.click();
+		await element.updateComplete;
+
+		expect(element.shadowRoot?.querySelector('h3')).toBeNull();
+		expect(element.shadowRoot?.querySelector('h1')?.textContent).toBe('Edit Hero');
+	});
+
+	it('copies UUID to clipboard on click', async () => {
+		const clipboardSpy = vi.fn().mockResolvedValue(undefined);
+		Object.defineProperty(navigator, 'clipboard', {
+			value: { writeText: clipboardSpy },
+			configurable: true,
+		});
+
+		element.editingHero = {
+			uuid: '99999999-9999-9999-9999-999999999999',
+			name: 'Arthur',
+			attack: 50,
+			defense: 50,
+			special_skill_id: 'excalibur',
+			status: 'active',
+		};
+		element.isOpen = true;
+		await element.updateComplete;
+
+		const copySpan = element.shadowRoot?.querySelector('.uuid-span-copy') as HTMLSpanElement;
+		copySpan.click();
+
+		expect(clipboardSpy).toHaveBeenCalledWith('99999999-9999-9999-9999-999999999999');
+	});
 });
