@@ -5,10 +5,13 @@ import { Hero, DraftHero } from '@hero_manager/shared';
 describe('HeroManager UI component', () => {
 	let manager: HeroManager;
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		HeroManager.register();
 		manager = document.createElement('hero-manager') as HeroManager;
 		document.body.appendChild(manager);
+		// Wait for sync controller to load initial mock heroes
+		await vi.waitFor(() => expect(manager.sync.heroesMap.size).toBe(2));
+		await manager.updateComplete;
 	});
 
 	afterEach(() => {
@@ -16,9 +19,6 @@ describe('HeroManager UI component', () => {
 	});
 
 	it('renders hero-list and hero-form-dialog sub-components', async () => {
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await manager.updateComplete;
-
 		const heroList = manager.shadowRoot?.querySelector('hero-list');
 		const formDialog = manager.shadowRoot?.querySelector('hero-form-dialog');
 
@@ -27,9 +27,6 @@ describe('HeroManager UI component', () => {
 	});
 
 	it('filters heroes visible in hero-list when filter-changed event occurs', async () => {
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await manager.updateComplete;
-
 		const heroList = manager.shadowRoot?.querySelector('hero-list') as any;
 		expect(heroList.heroes.length).toBe(2);
 
@@ -42,9 +39,6 @@ describe('HeroManager UI component', () => {
 	});
 
 	it('opens dialog for hero creation when create-hero is triggered', async () => {
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await manager.updateComplete;
-
 		const heroList = manager.shadowRoot?.querySelector('hero-list') as HTMLElement;
 		heroList.dispatchEvent(new CustomEvent('create-hero'));
 		await manager.updateComplete;
@@ -55,9 +49,6 @@ describe('HeroManager UI component', () => {
 	});
 
 	it('opens dialog for hero editing when edit-hero is triggered', async () => {
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await manager.updateComplete;
-
 		const sampleHero: Hero = {
 			uuid: '11111111-1111-1111-1111-111111111111',
 			name: 'Arthur Pendragon',
@@ -77,9 +68,6 @@ describe('HeroManager UI component', () => {
 	});
 
 	it('closes dialog when close-dialog event is emitted', async () => {
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await manager.updateComplete;
-
 		const formDialog = manager.shadowRoot?.querySelector('hero-form-dialog') as any;
 		// Open first
 		manager.shadowRoot?.querySelector('hero-list')?.dispatchEvent(new CustomEvent('create-hero'));
@@ -93,9 +81,6 @@ describe('HeroManager UI component', () => {
 	});
 
 	it('delegates save-hero to sync controller', async () => {
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await manager.updateComplete;
-
 		const saveSpy = vi.spyOn(manager.sync, 'saveHero').mockResolvedValue(undefined);
 
 		const newHero: DraftHero = {
@@ -114,9 +99,6 @@ describe('HeroManager UI component', () => {
 	});
 
 	it('resets dialog and filter on clean()', async () => {
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await manager.updateComplete;
-
 		// Open dialog and set filter
 		manager.shadowRoot?.querySelector('hero-list')?.dispatchEvent(new CustomEvent('create-hero'));
 		manager.shadowRoot?.querySelector('hero-list')?.dispatchEvent(new CustomEvent('filter-changed', { detail: 'query' }));

@@ -35,9 +35,11 @@ describe('HeroSyncController service', () => {
 
 	it('fetches heroes on hostConnected and saves them to cache', async () => {
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 50));
 
-		expect(controller.heroesMap.size).toBe(2);
+		await vi.waitFor(() => {
+			expect(controller.heroesMap.size).toBe(2);
+		});
+
 		expect(controller.lastUpdated).toBe(1000);
 
 		const cachedRaw = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
@@ -66,20 +68,22 @@ describe('HeroSyncController service', () => {
 		);
 
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 50));
 
-		// Stale hero purged, only the 2 active server heroes remain
-		expect(controller.heroesMap.has(staleHero.uuid)).toBe(false);
-		expect(controller.heroesMap.size).toBe(2);
+		await vi.waitFor(() => {
+			expect(controller.heroesMap.has(staleHero.uuid)).toBe(false);
+			expect(controller.heroesMap.size).toBe(2);
+		});
 	});
 
 	it('clears cache if localStorage has corrupted JSON', async () => {
 		localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, '{"corrupt_json":');
 
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 50));
 
-		expect(controller.heroesMap.size).toBe(2);
+		await vi.waitFor(() => {
+			expect(controller.heroesMap.size).toBe(2);
+		});
+
 		const cachedRaw = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
 		const cached = JSON.parse(cachedRaw!);
 		expect(cached.heroes.length).toBe(2);
@@ -116,16 +120,18 @@ describe('HeroSyncController service', () => {
 		host.addEventListener('fatal-error', fatalSpy as EventListener);
 
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 50));
 
-		expect(fatalSpy).toHaveBeenCalledTimes(1);
+		await vi.waitFor(() => {
+			expect(fatalSpy).toHaveBeenCalledTimes(1);
+		});
+
 		const detail = (fatalSpy.mock.calls[0][0] as CustomEvent).detail;
 		expect(detail).toBe(STATE_FATAL_SERVER);
 	});
 
 	it('saveHero adds new hero to heroesMap and saves to cache', async () => {
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 50));
+		await vi.waitFor(() => expect(controller.heroesMap.size).toBe(2));
 
 		const newHero: DraftHero = {
 			name: 'Gawain',
@@ -157,7 +163,7 @@ describe('HeroSyncController service', () => {
 		host.addEventListener('fatal-error', fatalSpy as EventListener);
 
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 50));
+		await vi.waitFor(() => expect(controller.heroesMap.size).toBe(2));
 
 		const invalidHero: DraftHero = {
 			name: '',
@@ -176,7 +182,7 @@ describe('HeroSyncController service', () => {
 
 	it('triggers silent fetchHeroes when SSE receives update message', async () => {
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 50));
+		await vi.waitFor(() => expect(controller.heroesMap.size).toBe(2));
 
 		const fetchSpy = vi.spyOn(controller, 'fetchHeroes');
 
@@ -186,7 +192,9 @@ describe('HeroSyncController service', () => {
 		// Simulate server broadcasting 'update' via SSE
 		sseInstance.emitMessage('update');
 
-		expect(fetchSpy).toHaveBeenCalledWith(true);
+		await vi.waitFor(() => {
+			expect(fetchSpy).toHaveBeenCalledWith(true);
+		});
 	});
 
 	it('notifies fatal-error when SSE connection errors and is closed', async () => {
@@ -194,7 +202,7 @@ describe('HeroSyncController service', () => {
 		host.addEventListener('fatal-error', fatalSpy as EventListener);
 
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 50));
+		await vi.waitFor(() => expect(controller.heroesMap.size).toBe(2));
 
 		const sseInstance = MockEventSource.instances[0];
 		expect(sseInstance).toBeDefined();
@@ -203,7 +211,10 @@ describe('HeroSyncController service', () => {
 		sseInstance.close();
 		sseInstance.emitError(new Error('Connection terminated'));
 
-		expect(fatalSpy).toHaveBeenCalledTimes(1);
+		await vi.waitFor(() => {
+			expect(fatalSpy).toHaveBeenCalledTimes(1);
+		});
+
 		const detail = (fatalSpy.mock.calls[0][0] as CustomEvent).detail;
 		expect(detail).toBe(STATE_FATAL_NETWORK);
 	});
@@ -249,10 +260,10 @@ describe('HeroSyncController service', () => {
 		);
 
 		controller.hostConnected();
-		await new Promise((resolve) => setTimeout(resolve, 80));
 
-		// Should have automatically recovered by clearing cache and re-fetching
-		expect(controller.heroesMap.size).toBe(1);
-		expect(controller.heroesMap.get('11111111-1111-1111-1111-111111111111')?.name).toBe('Recovered Hero');
+		await vi.waitFor(() => {
+			expect(controller.heroesMap.size).toBe(1);
+			expect(controller.heroesMap.get('11111111-1111-1111-1111-111111111111')?.name).toBe('Recovered Hero');
+		});
 	});
 });

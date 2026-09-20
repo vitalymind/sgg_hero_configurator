@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../mocks/server';
 import { HeroConfigurator } from '../../src/index';
@@ -21,11 +21,12 @@ describe('HeroConfigurator root component', () => {
 
 	it('renders hero-manager and hides status cover when /api/connect returns 200', async () => {
 		document.body.appendChild(app);
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await app.updateComplete;
+
+		await vi.waitFor(() => {
+			expect(app.shadowRoot?.querySelector('hero-manager')).not.toBeNull();
+		});
 
 		expect(app.shadowRoot?.querySelector('status-screen-cover')).toBeNull();
-		expect(app.shadowRoot?.querySelector('hero-manager')).not.toBeNull();
 	});
 
 	it('displays connection failed screen when /api/connect encounters a network error', async () => {
@@ -36,25 +37,24 @@ describe('HeroConfigurator root component', () => {
 		);
 
 		document.body.appendChild(app);
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await app.updateComplete;
 
-		const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
-		expect(cover).not.toBeNull();
-		expect(cover.loadingState).toBe(STATE_CONNECTING_FAILED);
+		await vi.waitFor(() => {
+			const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+			expect(cover).not.toBeNull();
+			expect(cover.loadingState).toBe(STATE_CONNECTING_FAILED);
+		});
+
 		expect(app.shadowRoot?.querySelector('hero-manager')).toBeNull();
 	});
 
 	it('overlays status-screen-cover when hero-manager dispatches fatal-error', async () => {
 		document.body.appendChild(app);
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await app.updateComplete;
 
-		// Initially hero-manager is visible
+		await vi.waitFor(() => {
+			expect(app.shadowRoot?.querySelector('hero-manager')).not.toBeNull();
+		});
+
 		const heroManager = app.shadowRoot?.querySelector('hero-manager');
-		expect(heroManager).not.toBeNull();
-
-		// hero-manager emits a fatal-error
 		heroManager?.dispatchEvent(
 			new CustomEvent('fatal-error', {
 				detail: STATE_FATAL_SERVER,
@@ -63,11 +63,11 @@ describe('HeroConfigurator root component', () => {
 			})
 		);
 
-		await app.updateComplete;
-
-		const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
-		expect(cover).not.toBeNull();
-		expect(cover.loadingState).toBe(STATE_FATAL_SERVER);
+		await vi.waitFor(() => {
+			const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+			expect(cover).not.toBeNull();
+			expect(cover.loadingState).toBe(STATE_FATAL_SERVER);
+		});
 	});
 
 	it('retries connection when retry event is emitted by status cover', async () => {
@@ -79,23 +79,24 @@ describe('HeroConfigurator root component', () => {
 		);
 
 		document.body.appendChild(app);
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await app.updateComplete;
 
-		const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
-		expect(cover).not.toBeNull();
-		expect(cover.loadingState).toBe(STATE_CONNECTING_FAILED);
+		await vi.waitFor(() => {
+			const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+			expect(cover).not.toBeNull();
+			expect(cover.loadingState).toBe(STATE_CONNECTING_FAILED);
+		});
 
 		// 2. Restore /api/connect to 200 OK
 		server.resetHandlers();
 
 		// 3. Emit retry event from cover
+		const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
 		cover.dispatchEvent(new CustomEvent('retry'));
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		await app.updateComplete;
 
-		// App should successfully connect and show hero-manager
+		await vi.waitFor(() => {
+			expect(app.shadowRoot?.querySelector('hero-manager')).not.toBeNull();
+		});
+
 		expect(app.shadowRoot?.querySelector('status-screen-cover')).toBeNull();
-		expect(app.shadowRoot?.querySelector('hero-manager')).not.toBeNull();
 	});
 });
