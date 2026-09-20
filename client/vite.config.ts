@@ -1,3 +1,5 @@
+/// <reference types="vitest/config" />
+
 import { defineConfig } from 'vite';
 import path from 'path';
 
@@ -22,5 +24,10 @@ export default defineConfig({
 				changeOrigin: true,
 			}
 		}
-  }
+  },
+	test: {
+		environment: 'happy-dom',
+		setupFiles: ['./tests/setup.ts'],
+		include: ['tests/**/*.test.ts'],
+	}
 });
