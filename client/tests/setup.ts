@@ -3,6 +3,14 @@ import { server } from './mocks/server';
 
 // Lightweight EventSource stub for happy-dom
 export class MockEventSource {
+	static readonly CONNECTING = 0;
+	static readonly OPEN = 1;
+	static readonly CLOSED = 2;
+
+	readonly CONNECTING = 0;
+	readonly OPEN = 1;
+	readonly CLOSED = 2;
+
 	static instances: MockEventSource[] = [];
 	url: string;
 	onmessage: ((e: { data: string }) => void) | null = null;

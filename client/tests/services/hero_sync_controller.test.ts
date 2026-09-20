@@ -7,9 +7,10 @@ import {
 	LOCAL_STORAGE_CACHE_KEY,
 	STATE_FATAL_NETWORK,
 	STATE_FATAL_SERVER,
+	STATE_FATAL_VALIDATION,
 	HEARTBEAT_TIMEOUT_SECONDS,
 } from '../../src/constants';
-import { Hero } from '@hero_manager/shared';
+import { Hero, DraftHero } from '@hero_manager/shared';
 import { ReactiveControllerHost } from 'lit';
 
 describe('HeroSyncController service', () => {
@@ -120,5 +121,138 @@ describe('HeroSyncController service', () => {
 		expect(fatalSpy).toHaveBeenCalledTimes(1);
 		const detail = (fatalSpy.mock.calls[0][0] as CustomEvent).detail;
 		expect(detail).toBe(STATE_FATAL_SERVER);
+	});
+
+	it('saveHero adds new hero to heroesMap and saves to cache', async () => {
+		controller.hostConnected();
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		const newHero: DraftHero = {
+			name: 'Gawain',
+			attack: 80,
+			defense: 70,
+			special_skill_id: 'sun_strength',
+			status: 'active',
+		};
+
+		await controller.saveHero(newHero);
+
+		expect(controller.heroesMap.size).toBe(3);
+		const gawain = Array.from(controller.heroesMap.values()).find((h) => h.name === 'Gawain');
+		expect(gawain).toBeDefined();
+		expect(gawain?.uuid).toBe('33333333-3333-3333-3333-333333333333');
+
+		const cached = JSON.parse(localStorage.getItem(LOCAL_STORAGE_CACHE_KEY)!);
+		expect(cached.heroes.length).toBe(3);
+	});
+
+	it('saveHero notifies fatal-error when save fails with 422', async () => {
+		server.use(
+			http.post('*/api/heroes', () => {
+				return new HttpResponse(null, { status: 422 });
+			})
+		);
+
+		const fatalSpy = vi.fn();
+		host.addEventListener('fatal-error', fatalSpy as EventListener);
+
+		controller.hostConnected();
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		const invalidHero: DraftHero = {
+			name: '',
+			attack: 0,
+			defense: 0,
+			special_skill_id: '',
+			status: 'active',
+		};
+
+		await controller.saveHero(invalidHero);
+
+		expect(fatalSpy).toHaveBeenCalledTimes(1);
+		const detail = (fatalSpy.mock.calls[0][0] as CustomEvent).detail;
+		expect(detail).toBe(STATE_FATAL_VALIDATION);
+	});
+
+	it('triggers silent fetchHeroes when SSE receives update message', async () => {
+		controller.hostConnected();
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		const fetchSpy = vi.spyOn(controller, 'fetchHeroes');
+
+		const sseInstance = MockEventSource.instances[0];
+		expect(sseInstance).toBeDefined();
+
+		// Simulate server broadcasting 'update' via SSE
+		sseInstance.emitMessage('update');
+
+		expect(fetchSpy).toHaveBeenCalledWith(true);
+	});
+
+	it('notifies fatal-error when SSE connection errors and is closed', async () => {
+		const fatalSpy = vi.fn();
+		host.addEventListener('fatal-error', fatalSpy as EventListener);
+
+		controller.hostConnected();
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		const sseInstance = MockEventSource.instances[0];
+		expect(sseInstance).toBeDefined();
+
+		// Close connection then emit error
+		sseInstance.close();
+		sseInstance.emitError(new Error('Connection terminated'));
+
+		expect(fatalSpy).toHaveBeenCalledTimes(1);
+		const detail = (fatalSpy.mock.calls[0][0] as CustomEvent).detail;
+		expect(detail).toBe(STATE_FATAL_NETWORK);
+	});
+
+	it('recovers and refetches when cache is empty but server has activeUuids', async () => {
+		// Mock server returning activeUuids but no heroes for a non-zero timestamp
+		server.use(
+			http.get('*/api/heroes', ({ request }) => {
+				const url = new URL(request.url);
+				const lastUpdated = Number(url.searchParams.get('lastUpdated'));
+				if (lastUpdated > 0) {
+					return HttpResponse.json({
+						lastUpdated: 2000,
+						heroes: [],
+						activeUuids: ['11111111-1111-1111-1111-111111111111'],
+					});
+				}
+				// Default handler responds for lastUpdated = 0
+				return HttpResponse.json({
+					lastUpdated: 2000,
+					heroes: [
+						{
+							uuid: '11111111-1111-1111-1111-111111111111',
+							name: 'Recovered Hero',
+							attack: 50,
+							defense: 50,
+							special_skill_id: 'slash',
+							status: 'active',
+						},
+					],
+					activeUuids: ['11111111-1111-1111-1111-111111111111'],
+				});
+			})
+		);
+
+		// Seed cache with lastUpdated > 0 but empty heroes array
+		localStorage.setItem(
+			LOCAL_STORAGE_CACHE_KEY,
+			JSON.stringify({
+				lastUpdated: 500,
+				heroes: [],
+			})
+		);
+
+		controller.hostConnected();
+		await new Promise((resolve) => setTimeout(resolve, 80));
+
+		// Should have automatically recovered by clearing cache and re-fetching
+		expect(controller.heroesMap.size).toBe(1);
+		expect(controller.heroesMap.get('11111111-1111-1111-1111-111111111111')?.name).toBe('Recovered Hero');
 	});
 });
