@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
+import { LitElement, html, css, TemplateResult, PropertyValues, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import {
 	STATE_CONNECTING_FAILED,
@@ -489,7 +489,7 @@ export class StatusScreenCover extends LitElement {
 		`;
 	}
 
-	render() {
+	private renderStatusContent(): TemplateResult | typeof nothing {
 		switch (this.loadingState) {
 			case STATE_CONNECTING_INIT:
 				return html`<h1>Connecting to server...</h1>`;
@@ -527,7 +527,21 @@ export class StatusScreenCover extends LitElement {
 			case STATE_SYNCING_DATA:
 				return html`<h2>Synchronizing data with server...</h2>`;
 			default:
-				return html``;
+				return nothing;
 		}
+	}
+
+	render() {
+		const content = this.renderStatusContent();
+		if (content === nothing) {
+			return nothing;
+		}
+		return html`
+			<div class="modal-backdrop">
+				<div class="modal-container">
+					${content}
+				</div>
+			</div>
+		`;
 	}
 }
