@@ -2,7 +2,7 @@
 
 ## Description
 This project is an end-to-end hero configurator monorepo organized into three parts:
-- **Client (`hero_manager_client`)**: A lightweight Lit Web Components SPA.
+- **Client (`hero_manager_client`)**: A Lit Web Components SPA bundled by Vite.
 - **Server (`hero_manager_server`)**: A containerized Express REST API with SQLite.
 - **Shared (`@hero_manager/shared`)**: A shared package containing declarative validation schemas (Zod), regexes, constants, and TypeScript types shared between client and server to guarantee zero contract drift.
 
@@ -10,6 +10,7 @@ This project is an end-to-end hero configurator monorepo organized into three pa
 - **Client (Frontend)**: Lit (Web Components), TypeScript, Vite.
 - **Server (Backend)**: Node.js 22, Express, TypeScript, Zod, native SQLite (`node:sqlite`), Docker.
 - **Shared Package**: TypeScript, Zod.
+- **Testing**: Vitest, happy-dom, MSW (Mock Service Worker), V8 Coverage.
 - **Monorepo / Workspaces**: npm workspaces.
 
 ## Notable Features
@@ -17,8 +18,8 @@ This project is an end-to-end hero configurator monorepo organized into three pa
 - **Real-Time Synchronization (SSE)**: Uses Server-Sent Events (`/api/heroes/stream`) to broadcast data updates to all connected clients, backed by a 10-second heartbeat ping with client-side disconnect detection.
 - **Incremental Delta Sync & Reconciliation**: Queries only heroes updated since the client's last timestamp (`?lastUpdated=...`) and reconciles active UUIDs to handle additions, updates, and deletions with minimal network overhead.
 - **Client-Side Caching (LocalStorage)**: Persists hero data to the browser's `localStorage` for fast application startup, followed by background synchronization with the server.
-- **Lightweight Web Components (Lit + TypeScript)**: Native Web Components without a bloated framework like React.
-- **Zero-Dependency Native SQLite**: Uses Node 22 native `node:sqlite` (`DatabaseSync`) without native compilation dependencies.
+- **Lightweight Web Components (Lit + TypeScript)**: Native Web Components without a heavy framework like React.
+- **Native SQLite**: Uses Node 22 native `node:sqlite` (`DatabaseSync`) without native compilation dependencies.
 
 ## How to Build for Local Development
 
@@ -48,6 +49,36 @@ npm run build:client
 # Start Vite client independently:
 npm run dev:client
 ```
+
+## Testing
+
+The client suite uses Vitest, happy-dom, and MSW for unit and component testing.
+
+### Running Tests
+From the repository root:
+```bash
+# Run client unit tests
+npm run test:run --workspace=hero_manager_client
+
+# Run tests in watch mode
+npm run test --workspace=hero_manager_client
+
+# Generate coverage report
+npm run test:coverage --workspace=hero_manager_client
+```
+
+### Pre-Commit Verification
+To verify TypeScript compilation and run tests locally before committing:
+```bash
+# Run checks manually:
+python run_pre_commit.py
+
+# Install automatic Git pre-commit hook:
+python install_git_hooks.py
+```
+
+### Continuous Integration
+GitHub Actions runs typechecking and Vitest tests on every push and pull request to `main` via `.github/workflows/ci.yml`.
 
 ## How to Publish & Deploy
 
