@@ -37,6 +37,26 @@ export function dbInitEmpty(db: DatabaseSync): void {
 		)
 	`);
 
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			email TEXT UNIQUE NOT NULL,
+			name TEXT NOT NULL,
+			created_at INTEGER NOT NULL,
+			last_login INTEGER
+		)
+	`);
+
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS otps (
+			email TEXT PRIMARY KEY,
+			otp TEXT NOT NULL,
+			name TEXT,
+			expires_at INTEGER NOT NULL,
+			attempts INTEGER NOT NULL DEFAULT 0
+		)
+	`);
+
 	//Debug
 	const countRow = db.prepare('SELECT COUNT(id) as count FROM heroes').get() as { count: number };
 	if (countRow.count === 0) {
@@ -96,6 +116,76 @@ export function dbCreateOrUpdateSession(db: DatabaseSync, token: string, email: 
 export function dbDeleteSession(db: DatabaseSync, token: string): void {
 	const stmt = db.prepare('DELETE FROM sessions WHERE token = ?');
 	stmt.run(token);
+}
+
+// User Operations
+export interface DbUser {
+	id: number;
+	email: string;
+	name: string;
+	created_at: number;
+	last_login: number | null;
+}
+
+export function dbGetUserByEmail(db: DatabaseSync, email: string): DbUser | undefined {
+	const stmt = db.prepare('SELECT id, email, name, created_at, last_login FROM users WHERE email = ?');
+	return stmt.get(email) as unknown as DbUser | undefined;
+}
+
+export function dbCreateOrUpdateUser(db: DatabaseSync, email: string, name: string): DbUser {
+	const now = getTimeStamp();
+	const stmt = db.prepare(`
+		INSERT INTO users (email, name, created_at, last_login)
+		VALUES (?, ?, ?, ?)
+		ON CONFLICT(email) DO UPDATE SET 
+			name = CASE WHEN excluded.name != '' THEN excluded.name ELSE users.name END,
+			last_login = excluded.last_login
+		RETURNING id, email, name, created_at, last_login
+	`);
+	return stmt.get(email, name, now, now) as unknown as DbUser;
+}
+
+// OTP Operations
+export interface DbOtp {
+	email: string;
+	otp: string;
+	name: string | null;
+	expires_at: number;
+	attempts: number;
+}
+
+export function dbSaveOtp(db: DatabaseSync, email: string, otp: string, name: string | undefined, expiresAt: number): void {
+	const stmt = db.prepare(`
+		INSERT INTO otps (email, otp, name, expires_at, attempts)
+		VALUES (?, ?, ?, ?, 0)
+		ON CONFLICT(email) DO UPDATE SET
+			otp = excluded.otp,
+			name = COALESCE(excluded.name, otps.name),
+			expires_at = excluded.expires_at,
+			attempts = 0
+	`);
+	stmt.run(email, otp, name ?? null, expiresAt);
+}
+
+export function dbGetOtp(db: DatabaseSync, email: string): DbOtp | undefined {
+	const stmt = db.prepare('SELECT email, otp, name, expires_at, attempts FROM otps WHERE email = ?');
+	return stmt.get(email) as unknown as DbOtp | undefined;
+}
+
+export function dbIncrementOtpAttempts(db: DatabaseSync, email: string): number {
+	const stmt = db.prepare(`
+		UPDATE otps
+		SET attempts = attempts + 1
+		WHERE email = ?
+		RETURNING attempts
+	`);
+	const res = stmt.get(email) as { attempts: number } | undefined;
+	return res?.attempts ?? 0;
+}
+
+export function dbDeleteOtp(db: DatabaseSync, email: string): void {
+	const stmt = db.prepare('DELETE FROM otps WHERE email = ?');
+	stmt.run(email);
 }
 
 //Debug
