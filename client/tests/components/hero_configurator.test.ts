@@ -5,6 +5,8 @@ import { HeroConfigurator } from '../../src/index';
 import {
 	STATE_CONNECTING_FAILED,
 	STATE_FATAL_SERVER,
+	STATE_AUTH_EMAIL,
+	STATE_AUTH_OTP
 } from '../../src/constants';
 
 describe('HeroConfigurator root component', () => {
@@ -98,5 +100,108 @@ describe('HeroConfigurator root component', () => {
 		});
 
 		expect(app.shadowRoot?.querySelector('status-screen-cover')).toBeNull();
+	});
+
+	it('displays login/signup cover when /api/connect returns 401', async () => {
+		server.use(
+			http.get('*/api/connect', () => {
+				return new HttpResponse(null, { status: 401 });
+			})
+		);
+
+		document.body.appendChild(app);
+
+		await vi.waitFor(() => {
+			const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+			expect(cover).not.toBeNull();
+			expect(cover.loadingState).toBe(STATE_AUTH_EMAIL);
+		});
+	});
+
+	it('handles sign-up event, sends request to /api/signup, and transitions to STATE_AUTH_OTP', async () => {
+		server.use(
+			http.get('*/api/connect', () => {
+				return new HttpResponse(null, { status: 401 });
+			})
+		);
+
+		document.body.appendChild(app);
+
+		await vi.waitFor(() => {
+			const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+			expect(cover).not.toBeNull();
+			expect(cover.loadingState).toBe(STATE_AUTH_EMAIL);
+		});
+
+		const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+		cover.dispatchEvent(
+			new CustomEvent('sign-up', {
+				detail: { name: 'Bob Builder', email: 'bob@company.com' }
+			})
+		);
+
+		await vi.waitFor(() => {
+			expect(cover.loadingState).toBe(STATE_AUTH_OTP);
+		});
+	});
+
+	it('handles verify-otp event and unlocks hero-manager on 200 OK', async () => {
+		server.use(
+			http.get('*/api/connect', () => {
+				return new HttpResponse(null, { status: 401 });
+			})
+		);
+
+		document.body.appendChild(app);
+
+		await vi.waitFor(() => {
+			const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+			expect(cover).not.toBeNull();
+		});
+
+		const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+		cover.dispatchEvent(
+			new CustomEvent('verify-otp', {
+				detail: { email: 'bob@company.com', otp: '123456' }
+			})
+		);
+
+		await vi.waitFor(() => {
+			expect(app.shadowRoot?.querySelector('hero-manager')).not.toBeNull();
+		});
+
+		expect(app.shadowRoot?.querySelector('status-screen-cover')).toBeNull();
+	});
+
+	it('handles back-to-auth event and transitions from OTP back to STATE_AUTH_EMAIL', async () => {
+		server.use(
+			http.get('*/api/connect', () => {
+				return new HttpResponse(null, { status: 401 });
+			})
+		);
+
+		document.body.appendChild(app);
+
+		await vi.waitFor(() => {
+			const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+			expect(cover).not.toBeNull();
+		});
+
+		const cover = app.shadowRoot?.querySelector('status-screen-cover') as any;
+		cover.dispatchEvent(
+			new CustomEvent('send-otp', {
+				detail: { email: 'alice@company.com' }
+			})
+		);
+
+		await vi.waitFor(() => {
+			expect(cover.loadingState).toBe(STATE_AUTH_OTP);
+		});
+
+		cover.dispatchEvent(new CustomEvent('back-to-auth'));
+
+		await vi.waitFor(() => {
+			expect(cover.loadingState).toBe(STATE_AUTH_EMAIL);
+		});
 	});
 });

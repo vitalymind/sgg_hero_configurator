@@ -15,6 +15,7 @@ import {
 	STATE_FATAL_NETWORK,
 	API_BASE_URL,
 	LoginSchema,
+	SignUpSchema,
 	VerifyOtpSchema
 } from './constants';
 
@@ -40,15 +41,27 @@ export class HeroConfigurator extends LitElement {
 
 	render() {
 		return html`
-			${this.showStatusCover ? html`
-				<status-screen-cover
-					.loadingState=${this.loadingState}
-					@send-otp=${this.handleSendOtp}
-					@verify-otp=${this.handleVerifyOtp}
-					@retry=${this.restartApp}
-					@relog=${this.relogin}>
-				</status-screen-cover>
-			`: html`<hero-manager @fatal-error=${(e: CustomEvent) => { this.loadingState = e.detail; this.showStatusCover = true; }}></hero-manager>`}
+			${this.showStatusCover
+				? html`
+						<status-screen-cover
+							.loadingState=${this.loadingState}
+							@send-otp=${this.handleSendOtp}
+							@sign-up=${this.handleSignUp}
+							@verify-otp=${this.handleVerifyOtp}
+							@back-to-auth=${this.backToAuth}
+							@retry=${this.restartApp}
+							@relog=${this.relogin}
+						>
+						</status-screen-cover>
+				  `
+				: html`
+						<hero-manager
+							@fatal-error=${(e: CustomEvent) => {
+								this.loadingState = e.detail;
+								this.showStatusCover = true;
+							}}
+						></hero-manager>
+				  `}
 		`;
 	}
 
@@ -72,6 +85,10 @@ export class HeroConfigurator extends LitElement {
 		this.loadingState = STATE_AUTH_EMAIL;
 	}
 
+	private backToAuth() {
+		this.loadingState = STATE_AUTH_EMAIL;
+	}
+
 	private async initServerConnection(): Promise<void> {
 		try {
 			const result = await fetch(`${API_BASE_URL}/api/connect`, { credentials: 'include' });
@@ -87,7 +104,7 @@ export class HeroConfigurator extends LitElement {
 			if (error instanceof Error) {
 				console.error(error.message);
 			} else {
-				console.error(error)
+				console.error(error);
 			}
 		}
 	}
@@ -106,6 +123,7 @@ export class HeroConfigurator extends LitElement {
 			const res = await fetch(`${API_BASE_URL}/api/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
 				body: JSON.stringify({ email })
 			});
 
@@ -117,7 +135,38 @@ export class HeroConfigurator extends LitElement {
 				this.loadingState = STATE_AUTH_FAILED;
 			}
 		} catch (error) {
-			console.error("Failed to send OTP", error);
+			console.error('Failed to send OTP', error);
+			this.loadingState = STATE_FATAL_NETWORK;
+		}
+	}
+
+	private async handleSignUp(e: CustomEvent) {
+		const parseResult = SignUpSchema.safeParse(e.detail);
+		if (!parseResult.success) {
+			this.loadingState = STATE_AUTH_FAILED;
+			return;
+		}
+
+		this.loadingState = STATE_AUTH_SENDING_OTP;
+		const { email, name } = parseResult.data;
+
+		try {
+			const res = await fetch(`${API_BASE_URL}/api/signup`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ email, name })
+			});
+
+			if (res.ok) {
+				this.loadingState = STATE_AUTH_OTP;
+			} else if (res.status >= 500) {
+				this.loadingState = STATE_FATAL_SERVER;
+			} else {
+				this.loadingState = STATE_AUTH_FAILED;
+			}
+		} catch (error) {
+			console.error('Failed to sign up', error);
 			this.loadingState = STATE_FATAL_NETWORK;
 		}
 	}
@@ -136,6 +185,7 @@ export class HeroConfigurator extends LitElement {
 			const result = await fetch(`${API_BASE_URL}/api/login/verify`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
 				body: JSON.stringify({ email, otp })
 			});
 
@@ -147,7 +197,7 @@ export class HeroConfigurator extends LitElement {
 				this.loadingState = STATE_AUTH_FAILED;
 			}
 		} catch (error) {
-			console.error("Failed to verify OTP", error);
+			console.error('Failed to verify OTP', error);
 			this.loadingState = STATE_FATAL_NETWORK;
 		}
 	}

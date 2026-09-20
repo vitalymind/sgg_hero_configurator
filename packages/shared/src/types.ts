@@ -6,6 +6,7 @@ import {
 	HeroQuerySchema,
 	HeroParamsSchema,
 	LoginSchema,
+	SignUpSchema,
 	VerifyOtpSchema,
 	HeroesSyncResponseSchema,
 	LocalStorageCacheSchema
@@ -18,6 +19,7 @@ export type UpdateHeroInput = z.infer<typeof UpdateHeroBodySchema>;
 export type HeroQuery = z.infer<typeof HeroQuerySchema>;
 export type HeroParams = z.infer<typeof HeroParamsSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
+export type SignUpInput = z.infer<typeof SignUpSchema>;
 export type VerifyOtpInput = z.infer<typeof VerifyOtpSchema>;
 export type HeroesSyncResponse = z.infer<typeof HeroesSyncResponseSchema>;
 export type LocalStorageCache = z.infer<typeof LocalStorageCacheSchema>;

@@ -1,5 +1,6 @@
 export const STATE_CONNECTING_INIT = 0;
 export const STATE_CONNECTING_FAILED = 1;
+export const STATE_CERT_MISSING = 2;
 export const STATE_AUTH_EMAIL = 3;
 export const STATE_AUTH_SENDING_OTP = 4;
 export const STATE_AUTH_OTP = 5;
@@ -20,6 +21,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export {
 	NAME_REGEX,
+	USER_NAME_REGEX,
 	SPECIAL_SKILL_ID_REGEX,
 	UUID_REGEX,
 	MAX_STRING_LENGTH,
@@ -31,5 +33,6 @@ export {
 	HeroesSyncResponseSchema,
 	LocalStorageCacheSchema,
 	LoginSchema,
+	SignUpSchema,
 	VerifyOtpSchema
 } from '@hero_manager/shared';

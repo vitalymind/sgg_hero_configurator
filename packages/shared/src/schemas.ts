@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
 	NAME_REGEX,
+	USER_NAME_REGEX,
 	SPECIAL_SKILL_ID_REGEX,
 	UUID_REGEX,
 	MAX_STRING_LENGTH,
@@ -64,10 +65,19 @@ export const LocalStorageCacheSchema = z.object({
 });
 
 export const LoginSchema = z.object({
-	email: z.string().min(1, 'Email is required').email('Please enter a valid email address')
+	email: z.string().trim().min(1, 'Email is required').email('Please enter a valid email address')
+});
+
+export const SignUpSchema = z.object({
+	name: z.string()
+		.trim()
+		.min(1, 'Name is required')
+		.max(MAX_STRING_LENGTH, `Name must not exceed ${MAX_STRING_LENGTH} characters`)
+		.regex(USER_NAME_REGEX, 'Name contains invalid characters'),
+	email: z.string().trim().min(1, 'Email is required').email('Please enter a valid email address')
 });
 
 export const VerifyOtpSchema = z.object({
-	email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
-	otp: z.string().regex(/^\d{6}$/, 'OTP must be exactly 6 digits')
+	email: z.string().trim().min(1, 'Email is required').email('Please enter a valid email address'),
+	otp: z.string().trim().regex(/^\d{6}$/, 'OTP must be exactly 6 digits')
 });

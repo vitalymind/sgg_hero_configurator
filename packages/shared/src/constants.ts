@@ -1,4 +1,5 @@
 export const NAME_REGEX = /^[A-Za-z0-9_\- ]+$/;
+export const USER_NAME_REGEX = /^[\p{L}\p{N}_\- ']+$/u;
 export const SPECIAL_SKILL_ID_REGEX = /^[a-z0-9_\-]+$/;
 export const UUID_REGEX = /^[a-z0-9\-]+$/;
 

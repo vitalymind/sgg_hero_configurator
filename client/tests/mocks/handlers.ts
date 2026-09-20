@@ -31,6 +31,11 @@ export const handlers = [
 		return HttpResponse.json({ message: 'OTP sent' });
 	}),
 
+	// Signup request OTP
+	http.post('*/api/signup', () => {
+		return HttpResponse.json({ message: 'OTP sent' });
+	}),
+
 	// Login verify OTP
 	http.post('*/api/login/verify', () => {
 		return HttpResponse.json({ message: 'Authenticated' });
