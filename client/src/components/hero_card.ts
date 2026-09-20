@@ -1,6 +1,6 @@
+import { Hero } from '@hero_manager/shared';
 import { LitElement, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Hero } from '../interfaces';
 
 export class HeroCard extends LitElement {
 	static register() {

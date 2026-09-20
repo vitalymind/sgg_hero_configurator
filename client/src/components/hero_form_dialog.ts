@@ -1,6 +1,5 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { Hero, DraftHero } from '../interfaces';
 import {
 	CreateHeroBodySchema,
 	MAX_ATTACK_SLIDER_AMOUNT,
@@ -8,6 +7,7 @@ import {
 	MAX_ATTACK_DEFENSE_VALUE
 } from '../constants';
 import { modalBackdropStyle, modalContainerStyle, inputStyle } from '../common_styles';
+import { DraftHero, Hero } from '@hero_manager/shared';
 
 export class HeroFormDialog extends LitElement {
 	static register() {

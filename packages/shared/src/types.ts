@@ -12,6 +12,7 @@ import {
 } from './schemas.js';
 
 export type Hero = z.infer<typeof HeroSchema>;
+export type DraftHero = Omit<Hero, 'uuid' | 'id'>;
 export type CreateHeroInput = z.infer<typeof CreateHeroBodySchema>;
 export type UpdateHeroInput = z.infer<typeof UpdateHeroBodySchema>;
 export type HeroQuery = z.infer<typeof HeroQuerySchema>;

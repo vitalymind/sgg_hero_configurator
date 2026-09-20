@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { Hero } from "./interfaces.js";
+import { Hero } from "@hero_manager/shared";
 import crypto from 'crypto';
 
 //Generate short (for better UI), but still strongly unique, given low burst frequency

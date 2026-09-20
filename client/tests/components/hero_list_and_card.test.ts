@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HeroCard } from '../../src/components/hero_card';
 import { HeroList } from '../../src/components/hero_list';
-import { Hero } from '../../src/interfaces';
+import { Hero } from '@hero_manager/shared';
 
 const sampleHero: Hero = {
 	uuid: '11111111-1111-1111-1111-111111111111',

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HeroFormDialog } from '../../src/components/hero_form_dialog';
-import { Hero } from '../../src/interfaces';
+import { Hero } from '@hero_manager/shared';
 
 describe('HeroFormDialog component', () => {
 	let element: HeroFormDialog;

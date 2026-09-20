@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Hero } from '../interfaces';
 import { HeroCard } from './hero_card';
+import { Hero } from '@hero_manager/shared';
 
 export class HeroList extends LitElement {
 	static register() {

@@ -30,7 +30,7 @@ export default defineConfig({
 		setupFiles: ['./tests/setup.ts'],
 		include: ['tests/**/*.test.ts'],
 		coverage: {
-			include: ['src/**'], // <-- Only measure production code in src/
+			include: ['src/**'],
 		}
 	}
 });
