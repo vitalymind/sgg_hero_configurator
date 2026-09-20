@@ -8,7 +8,6 @@ import {
 	STATE_AUTH_SENDING_OTP,
 	STATE_AUTH_OTP,
 	STATE_AUTH_VERIFYING,
-	STATE_AUTH_FAILED,
 	STATE_AUTH_EXPIRED,
 	STATE_FATAL_NETWORK,
 	STATE_FATAL_SERVER,
@@ -30,6 +29,8 @@ export class StatusScreenCover extends LitElement {
 
 	@property({ type: Number }) loadingState = STATE_CONNECTING_INIT;
 	@property({ type: Boolean }) isRetrying = false;
+	@property({ type: String }) otpErrorMessage = '';
+	@property({ type: String }) authErrorMessage = '';
 
 	@state() private authTab: 'login' | 'signup' = 'login';
 	@state() private emailInput = '';
@@ -43,6 +44,8 @@ export class StatusScreenCover extends LitElement {
 		this.emailInput = '';
 		this.nameInput = '';
 		this.otpInput = '';
+		this.otpErrorMessage = '';
+		this.authErrorMessage = '';
 		this.authTab = 'login';
 		this.stopResendTimer();
 	}
@@ -56,7 +59,9 @@ export class StatusScreenCover extends LitElement {
 		super.willUpdate(changedProperties);
 		if (changedProperties.has('loadingState')) {
 			if (this.loadingState === STATE_AUTH_OTP) {
-				this.startResendTimer(60);
+				if (this.resendCountdown === 0 && this.resendTimerInterval === null) {
+					this.startResendTimer(60);
+				}
 			} else if (this.loadingState !== STATE_AUTH_VERIFYING) {
 				this.stopResendTimer();
 			}
@@ -91,12 +96,24 @@ export class StatusScreenCover extends LitElement {
 		return this.emailValidation.success;
 	}
 
+	private get nameValidation() {
+		return SignUpSchema.shape.name.safeParse(this.nameInput);
+	}
+
+	private get isNameValid(): boolean {
+		return this.nameValidation.success;
+	}
+
 	private get signUpValidation() {
 		return SignUpSchema.safeParse({ name: this.nameInput, email: this.emailInput });
 	}
 
 	private get isSignUpValid(): boolean {
 		return this.signUpValidation.success;
+	}
+
+	private get otpFieldValidation() {
+		return VerifyOtpSchema.shape.otp.safeParse(this.otpInput);
 	}
 
 	private get otpValidation() {
@@ -111,6 +128,7 @@ export class StatusScreenCover extends LitElement {
 		if (!this.isEmailValid) {
 			return;
 		}
+		this.authErrorMessage = '';
 		this.dispatchEvent(new CustomEvent('send-otp', { detail: { email: this.emailInput } }));
 	}
 
@@ -118,6 +136,7 @@ export class StatusScreenCover extends LitElement {
 		if (!this.isSignUpValid) {
 			return;
 		}
+		this.authErrorMessage = '';
 		this.dispatchEvent(
 			new CustomEvent('sign-up', {
 				detail: { name: this.nameInput, email: this.emailInput }
@@ -129,6 +148,7 @@ export class StatusScreenCover extends LitElement {
 		if (this.resendCountdown > 0) {
 			return;
 		}
+		this.otpErrorMessage = '';
 		if (this.authTab === 'signup' && this.nameInput.trim().length > 0) {
 			this.handleSignUp();
 		} else {
@@ -141,25 +161,30 @@ export class StatusScreenCover extends LitElement {
 		if (!this.isOtpValid) {
 			return;
 		}
+		this.otpErrorMessage = '';
 		this.dispatchEvent(new CustomEvent('verify-otp', { detail: { email: this.emailInput, otp: this.otpInput } }));
 	}
 
 	private handleBackToAuth() {
 		this.otpInput = '';
+		this.otpErrorMessage = '';
 		this.stopResendTimer();
 		this.dispatchEvent(new CustomEvent('back-to-auth'));
 	}
 
 	private handleEmailInput(e: Event) {
 		this.emailInput = (e.target as HTMLInputElement).value;
+		this.authErrorMessage = '';
 	}
 
 	private handleNameInput(e: Event) {
 		this.nameInput = (e.target as HTMLInputElement).value;
+		this.authErrorMessage = '';
 	}
 
 	private handleOtpInput(e: Event) {
 		this.otpInput = (e.target as HTMLInputElement).value;
+		this.otpErrorMessage = '';
 	}
 
 	private handleOtpPaste(e: ClipboardEvent) {
@@ -167,6 +192,7 @@ export class StatusScreenCover extends LitElement {
 		const pasted = e.clipboardData?.getData('text') || '';
 		const digits = pasted.replace(/\D/g, '').slice(0, 6);
 		this.otpInput = digits;
+		this.otpErrorMessage = '';
 	}
 
 	static styles = [
@@ -290,6 +316,15 @@ export class StatusScreenCover extends LitElement {
 				color: #ef4444;
 				font-size: 0.85em;
 			}
+			.form-error {
+				color: #ef4444;
+				font-size: 0.85em;
+				margin-bottom: 8px;
+				padding: 6px 10px;
+				background: #fef2f2;
+				border: 1px solid #fecaca;
+				border-radius: 4px;
+			}
 			.retry-btn {
 				display: inline-flex;
 				align-items: center;
@@ -322,16 +357,18 @@ export class StatusScreenCover extends LitElement {
 
 	private renderAuthForm(): TemplateResult {
 		const isLogin = this.authTab === 'login';
+		const isSending = this.loadingState === STATE_AUTH_SENDING_OTP;
+
 		const hasEmailError = this.emailInput.length > 0 && !this.isEmailValid;
 		const emailError =
 			hasEmailError && !this.emailValidation.success
 				? this.emailValidation.error.flatten().fieldErrors.email?.[0]
 				: undefined;
 
-		const hasNameError = !isLogin && this.nameInput.length > 0 && !this.isSignUpValid;
+		const hasNameError = !isLogin && this.nameInput.length > 0 && !this.isNameValid;
 		const nameError =
-			hasNameError && !this.signUpValidation.success
-				? this.signUpValidation.error.flatten().fieldErrors.name?.[0]
+			hasNameError && !this.nameValidation.success
+				? this.nameValidation.error.issues[0]?.message
 				: undefined;
 
 		return html`
@@ -340,18 +377,30 @@ export class StatusScreenCover extends LitElement {
 				<button
 					type="button"
 					class="tab-btn ${isLogin ? 'active' : ''}"
-					@click=${() => (this.authTab = 'login')}
+					?disabled=${isSending}
+					@click=${() => {
+						this.authTab = 'login';
+						this.authErrorMessage = '';
+					}}
 				>
 					Log In
 				</button>
 				<button
 					type="button"
 					class="tab-btn ${!isLogin ? 'active' : ''}"
-					@click=${() => (this.authTab = 'signup')}
+					?disabled=${isSending}
+					@click=${() => {
+						this.authTab = 'signup';
+						this.authErrorMessage = '';
+					}}
 				>
 					Sign Up
 				</button>
 			</div>
+
+			${this.authErrorMessage
+				? html`<div class="form-error">${this.authErrorMessage}</div>`
+				: ''}
 
 			${!isLogin
 				? html`
@@ -361,10 +410,11 @@ export class StatusScreenCover extends LitElement {
 								class="input-field ${hasNameError ? 'error' : ''}"
 								type="text"
 								placeholder="Display name"
+								?disabled=${isSending}
 								.value=${this.nameInput}
 								@input=${this.handleNameInput}
 								@keydown=${(e: KeyboardEvent) =>
-									e.key === 'Enter' && this.isSignUpValid && this.handleSignUp()}
+									e.key === 'Enter' && this.isSignUpValid && !isSending && this.handleSignUp()}
 							/>
 							${nameError ? html`<span class="error-msg">${nameError}</span>` : ''}
 						</div>
@@ -377,10 +427,12 @@ export class StatusScreenCover extends LitElement {
 					class="input-field ${hasEmailError ? 'error' : ''}"
 					type="email"
 					placeholder="name@company.com"
+					?disabled=${isSending}
 					.value=${this.emailInput}
 					@input=${this.handleEmailInput}
 					@keydown=${(e: KeyboardEvent) =>
 						e.key === 'Enter' &&
+						!isSending &&
 						(isLogin ? this.isEmailValid && this.handleSendOtp() : this.isSignUpValid && this.handleSignUp())}
 				/>
 				${emailError ? html`<span class="error-msg">${emailError}</span>` : ''}
@@ -389,13 +441,24 @@ export class StatusScreenCover extends LitElement {
 			<div class="dialog-actions">
 				${isLogin
 					? html`
-							<button class="primary" ?disabled=${!this.isEmailValid} @click=${this.handleSendOtp}>
-								Send OTP
+							<button
+								class="primary retry-btn"
+								?disabled=${!this.isEmailValid || isSending}
+								@click=${this.handleSendOtp}
+							>
+								<span>${isSending ? 'Sending OTP...' : 'Send OTP'}</span>
+								${isSending
+									? html`<span class="icon-slot"><span class="spinner" aria-hidden="true"></span></span>`
+									: nothing}
 							</button>
 					  `
 					: html`
-							<button class="primary" ?disabled=${!this.isSignUpValid} @click=${this.handleSignUp}>
-								Sign Up
+							<button
+								class="primary"
+								?disabled=${!this.isSignUpValid || isSending}
+								@click=${this.handleSignUp}
+							>
+								${isSending ? 'Signing Up...' : 'Sign Up'}
 							</button>
 					  `}
 			</div>
@@ -403,11 +466,16 @@ export class StatusScreenCover extends LitElement {
 	}
 
 	private renderOtpForm(): TemplateResult {
-		const hasError = this.otpInput.length > 0 && !this.isOtpValid;
-		const errorMessage =
-			hasError && !this.otpValidation.success
-				? this.otpValidation.error.flatten().fieldErrors.otp?.[0]
+		const isVerifying = this.loadingState === STATE_AUTH_VERIFYING;
+		const isPatternValid = this.otpFieldValidation.success;
+		const hasFormatError = this.otpInput.length > 0 && !isPatternValid;
+		const formatError =
+			hasFormatError && !this.otpFieldValidation.success
+				? this.otpFieldValidation.error.issues[0]?.message
 				: undefined;
+
+		const displayError = this.otpErrorMessage || formatError;
+		const hasError = Boolean(displayError);
 
 		return html`
 			<h1>Hero Configurator</h1>
@@ -424,27 +492,43 @@ export class StatusScreenCover extends LitElement {
 					autocomplete="one-time-code"
 					maxlength="6"
 					placeholder="000000"
+					?disabled=${isVerifying}
 					.value=${this.otpInput}
 					@input=${this.handleOtpInput}
 					@paste=${this.handleOtpPaste}
-					@keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this.isOtpValid && this.handleVerifyOtp()}
+					@keydown=${(e: KeyboardEvent) =>
+						e.key === 'Enter' && this.isOtpValid && !isVerifying && this.handleVerifyOtp()}
 				/>
-				${errorMessage ? html`<span class="error-msg">${errorMessage}</span>` : ''}
+				${displayError ? html`<span class="error-msg">${displayError}</span>` : ''}
 			</div>
 			<div class="dialog-actions-spread">
-				<button type="button" class="link-btn" @click=${this.handleBackToAuth}>
+				<button
+					type="button"
+					class="link-btn"
+					?disabled=${isVerifying}
+					@click=${this.handleBackToAuth}
+				>
 					← Change Email
 				</button>
 				<div class="action-buttons">
 					<button
 						type="button"
-						?disabled=${this.resendCountdown > 0}
+						?disabled=${this.resendCountdown > 0 || isVerifying}
 						@click=${this.handleResendOtp}
 					>
 						${this.resendCountdown > 0 ? `Resend in ${this.resendCountdown}s` : 'Resend Code'}
 					</button>
-					<button class="primary" ?disabled=${!this.isOtpValid} @click=${this.handleVerifyOtp}>
-						Verify & Log In
+					<button
+						class="primary retry-btn"
+						?disabled=${!this.isOtpValid || isVerifying}
+						@click=${this.handleVerifyOtp}
+					>
+						<span>Verify & Log In</span>
+						<span class="icon-slot">
+							${isVerifying
+								? html`<span class="spinner" aria-hidden="true"></span>`
+								: html`<span class="arrow" aria-hidden="true">→</span>`}
+						</span>
 					</button>
 				</div>
 			</div>
@@ -551,23 +635,11 @@ export class StatusScreenCover extends LitElement {
 			case STATE_CERT_MISSING:
 				return this.renderCertMissing();
 			case STATE_AUTH_EMAIL:
-				return this.renderAuthForm();
 			case STATE_AUTH_SENDING_OTP:
-				return html`<h1>Sending verification code...</h1>`;
+				return this.renderAuthForm();
 			case STATE_AUTH_OTP:
-				return this.renderOtpForm();
 			case STATE_AUTH_VERIFYING:
-				return html`<h1>Verifying code...</h1>`;
-			case STATE_AUTH_FAILED:
-				return html`
-					<h1>Authentication failed</h1>
-					<p>The verification code was incorrect or expired.</p>
-					<div class="dialog-actions">
-						<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('relog'))}>
-							Try Again
-						</button>
-					</div>
-				`;
+				return this.renderOtpForm();
 			case STATE_AUTH_EXPIRED:
 				return this.renderSessionExpired();
 			case STATE_FATAL_NETWORK:

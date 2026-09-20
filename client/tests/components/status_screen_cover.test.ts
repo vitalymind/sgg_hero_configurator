@@ -4,8 +4,7 @@ import {
 	STATE_AUTH_EMAIL,
 	STATE_AUTH_OTP,
 	STATE_CONNECTING_FAILED,
-	STATE_CERT_MISSING,
-	STATE_AUTH_FAILED
+	STATE_CERT_MISSING
 } from '../../src/constants';
 
 describe('StatusScreenCover component', () => {
@@ -242,18 +241,4 @@ describe('StatusScreenCover component', () => {
 		expect(activeBtn.textContent).toContain('Retry');
 	});
 
-	it('renders authentication failed screen and emits relog when clicking Try Again', async () => {
-		cover.loadingState = STATE_AUTH_FAILED;
-		await cover.updateComplete;
-
-		expect(cover.shadowRoot?.textContent).toContain('Authentication failed');
-		expect(cover.shadowRoot?.textContent).toContain('verification code was incorrect');
-
-		const tryAgainBtn = cover.shadowRoot?.querySelector('button.primary') as HTMLButtonElement;
-		const relogSpy = vi.fn();
-		cover.addEventListener('relog', relogSpy);
-
-		tryAgainBtn.click();
-		expect(relogSpy).toHaveBeenCalledTimes(1);
-	});
 });

@@ -11,7 +11,6 @@ import {
 	STATE_AUTH_SENDING_OTP,
 	STATE_AUTH_OTP,
 	STATE_AUTH_VERIFYING,
-	STATE_AUTH_FAILED,
 	STATE_FATAL_SERVER,
 	STATE_FATAL_NETWORK,
 	API_BASE_URL,
@@ -32,6 +31,8 @@ export class HeroConfigurator extends LitElement {
 	@state() private showStatusCover = true;
 	@state() private loadingState = STATE_CONNECTING_INIT;
 	@state() private isRetrying = false;
+	@state() private otpErrorMessage = '';
+	@state() private authErrorMessage = '';
 
 	@query('hero-manager') manager?: HeroManager;
 	@query('status-screen-cover') statusCover?: StatusScreenCover;
@@ -48,6 +49,8 @@ export class HeroConfigurator extends LitElement {
 						<status-screen-cover
 							.loadingState=${this.loadingState}
 							.isRetrying=${this.isRetrying}
+							.otpErrorMessage=${this.otpErrorMessage}
+							.authErrorMessage=${this.authErrorMessage}
 							@send-otp=${this.handleSendOtp}
 							@sign-up=${this.handleSignUp}
 							@verify-otp=${this.handleVerifyOtp}
@@ -75,6 +78,8 @@ export class HeroConfigurator extends LitElement {
 		if (this.statusCover) {
 			this.statusCover.clean();
 		}
+		this.otpErrorMessage = '';
+		this.authErrorMessage = '';
 	}
 
 	private async restartApp(): Promise<void> {
@@ -93,6 +98,8 @@ export class HeroConfigurator extends LitElement {
 	}
 
 	private backToAuth() {
+		this.otpErrorMessage = '';
+		this.authErrorMessage = '';
 		this.loadingState = STATE_AUTH_EMAIL;
 	}
 
@@ -121,12 +128,17 @@ export class HeroConfigurator extends LitElement {
 	private async handleSendOtp(e: CustomEvent) {
 		const parseResult = LoginSchema.safeParse(e.detail);
 		if (!parseResult.success) {
-			this.loadingState = STATE_AUTH_FAILED;
+			this.authErrorMessage = parseResult.error.issues[0]?.message || 'Please enter a valid email address';
 			return;
 		}
 
-		this.loadingState = STATE_AUTH_SENDING_OTP;
 		const { email } = parseResult.data;
+		const isAlreadyOnOtp = this.loadingState === STATE_AUTH_OTP || this.loadingState === STATE_AUTH_VERIFYING;
+
+		if (!isAlreadyOnOtp) {
+			this.loadingState = STATE_AUTH_SENDING_OTP;
+			this.authErrorMessage = '';
+		}
 
 		try {
 			const res = await fetch(`${API_BASE_URL}/api/login`, {
@@ -138,10 +150,19 @@ export class HeroConfigurator extends LitElement {
 
 			if (res.ok) {
 				this.loadingState = STATE_AUTH_OTP;
+				this.otpErrorMessage = '';
+				this.authErrorMessage = '';
 			} else if (res.status >= 500) {
 				this.loadingState = STATE_FATAL_SERVER;
 			} else {
-				this.loadingState = STATE_AUTH_FAILED;
+				const data = (await res.json().catch(() => ({}))) as { message?: string };
+				if (isAlreadyOnOtp) {
+					this.loadingState = STATE_AUTH_OTP;
+					this.otpErrorMessage = data.message || 'Failed to resend verification code';
+				} else {
+					this.loadingState = STATE_AUTH_EMAIL;
+					this.authErrorMessage = data.message || 'Failed to send verification code';
+				}
 			}
 		} catch (error) {
 			console.error('Failed to send OTP', error);
@@ -152,12 +173,17 @@ export class HeroConfigurator extends LitElement {
 	private async handleSignUp(e: CustomEvent) {
 		const parseResult = SignUpSchema.safeParse(e.detail);
 		if (!parseResult.success) {
-			this.loadingState = STATE_AUTH_FAILED;
+			this.authErrorMessage = parseResult.error.issues[0]?.message || 'Please check the form for errors';
 			return;
 		}
 
-		this.loadingState = STATE_AUTH_SENDING_OTP;
 		const { email, name } = parseResult.data;
+		const isAlreadyOnOtp = this.loadingState === STATE_AUTH_OTP || this.loadingState === STATE_AUTH_VERIFYING;
+
+		if (!isAlreadyOnOtp) {
+			this.loadingState = STATE_AUTH_SENDING_OTP;
+			this.authErrorMessage = '';
+		}
 
 		try {
 			const res = await fetch(`${API_BASE_URL}/api/signup`, {
@@ -169,10 +195,19 @@ export class HeroConfigurator extends LitElement {
 
 			if (res.ok) {
 				this.loadingState = STATE_AUTH_OTP;
+				this.otpErrorMessage = '';
+				this.authErrorMessage = '';
 			} else if (res.status >= 500) {
 				this.loadingState = STATE_FATAL_SERVER;
 			} else {
-				this.loadingState = STATE_AUTH_FAILED;
+				const data = (await res.json().catch(() => ({}))) as { message?: string };
+				if (isAlreadyOnOtp) {
+					this.loadingState = STATE_AUTH_OTP;
+					this.otpErrorMessage = data.message || 'Failed to resend verification code';
+				} else {
+					this.loadingState = STATE_AUTH_EMAIL;
+					this.authErrorMessage = data.message || 'Failed to sign up';
+				}
 			}
 		} catch (error) {
 			console.error('Failed to sign up', error);
@@ -183,11 +218,13 @@ export class HeroConfigurator extends LitElement {
 	private async handleVerifyOtp(e: CustomEvent) {
 		const parseResult = VerifyOtpSchema.safeParse(e.detail);
 		if (!parseResult.success) {
-			this.loadingState = STATE_AUTH_FAILED;
+			this.loadingState = STATE_AUTH_OTP;
+			this.otpErrorMessage = parseResult.error.issues[0]?.message || 'Invalid verification code';
 			return;
 		}
 
 		this.loadingState = STATE_AUTH_VERIFYING;
+		this.otpErrorMessage = '';
 		const { email, otp } = parseResult.data;
 
 		try {
@@ -200,10 +237,13 @@ export class HeroConfigurator extends LitElement {
 
 			if (result.ok) {
 				this.showStatusCover = false;
+				this.otpErrorMessage = '';
 			} else if (result.status >= 500) {
 				this.loadingState = STATE_FATAL_SERVER;
 			} else {
-				this.loadingState = STATE_AUTH_FAILED;
+				const data = (await result.json().catch(() => ({}))) as { message?: string };
+				this.loadingState = STATE_AUTH_OTP;
+				this.otpErrorMessage = data.message || 'Invalid or expired verification code';
 			}
 		} catch (error) {
 			console.error('Failed to verify OTP', error);

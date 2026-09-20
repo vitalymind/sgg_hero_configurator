@@ -5,7 +5,6 @@ export const STATE_AUTH_EMAIL = 3;
 export const STATE_AUTH_SENDING_OTP = 4;
 export const STATE_AUTH_OTP = 5;
 export const STATE_AUTH_VERIFYING = 6;
-export const STATE_AUTH_FAILED = 7;
 export const STATE_AUTH_EXPIRED = 8;
 export const STATE_FATAL_NETWORK = 9;
 export const STATE_FATAL_SERVER = 10;

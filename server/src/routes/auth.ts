@@ -200,8 +200,16 @@ export function createAuthRouter(
 			if (attempts >= MAX_OTP_ATTEMPTS) {
 				dbDeleteOtp(db, email);
 				log(`[AUTH]: Maximum OTP attempts exceeded for ${email}, locked out.`);
+				return res.status(401).json({
+					error: "MAX_ATTEMPTS_EXCEEDED",
+					message: "Too many failed attempts. Please request a new verification code."
+				});
 			}
-			return res.status(401).json({ error: "INVALID_OTP", message: "Invalid verification code" });
+			const remaining = MAX_OTP_ATTEMPTS - attempts;
+			return res.status(401).json({
+				error: "INVALID_OTP",
+				message: `Invalid verification code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
+			});
 		}
 
 		// Valid OTP
