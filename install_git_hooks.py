@@ -16,7 +16,7 @@ def main():
 		hook_content = (
 				"#!/bin/sh\n"
 				"# Auto-generated hook by install_git_hooks.py\n"
-				"python run_pre_commit.py\n"
+				"PYTHONIOENCODING=utf-8 python run_pre_commit.py\n"
 		)
 
 		with open(hook_path, 'w', encoding='utf-8', newline='\n') as f:

@@ -3,6 +3,12 @@ import subprocess
 import sys
 import time
 
+# Force UTF-8 encoding for Windows Git subshells
+if hasattr(sys.stdout, 'reconfigure'):
+		sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+		sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+  
 def run_step(step_number, total_steps, title, command, cwd):
 		print(f"\n[{step_number}/{total_steps}] ⏳ {title}...")
 		start = time.time()
