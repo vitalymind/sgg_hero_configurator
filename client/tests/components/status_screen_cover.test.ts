@@ -202,12 +202,11 @@ describe('StatusScreenCover component', () => {
 		expect(backSpy).toHaveBeenCalledTimes(1);
 	});
 
-	it('renders device certificate required screen when connection fails', async () => {
+	it('renders connection failed screen when connection fails', async () => {
 		cover.loadingState = STATE_CONNECTING_FAILED;
 		await cover.updateComplete;
 
-		expect(cover.shadowRoot?.textContent).toContain('Device Certificate Required');
-		expect(cover.shadowRoot?.textContent).toContain('authorized studio devices');
+		expect(cover.shadowRoot?.textContent).toContain('Unable to Connect');
 
 		const retryBtn = cover.shadowRoot?.querySelector('button.primary') as HTMLButtonElement;
 		const retrySpy = vi.fn();
@@ -217,11 +216,30 @@ describe('StatusScreenCover component', () => {
 		expect(retrySpy).toHaveBeenCalledTimes(1);
 	});
 
-	it('renders device certificate required screen on STATE_CERT_MISSING as well', async () => {
+	it('renders device certificate required screen on STATE_CERT_MISSING', async () => {
 		cover.loadingState = STATE_CERT_MISSING;
 		await cover.updateComplete;
 
 		expect(cover.shadowRoot?.textContent).toContain('Device Certificate Required');
+	});
+
+	it('disables retry button and shows spinner when isRetrying is true, and arrow when idle', async () => {
+		cover.loadingState = STATE_CONNECTING_FAILED;
+		cover.isRetrying = false;
+		await cover.updateComplete;
+
+		const idleBtn = cover.shadowRoot?.querySelector('button.primary') as HTMLButtonElement;
+		expect(idleBtn.disabled).toBe(false);
+		expect(idleBtn.textContent).toContain('Retry');
+		expect(idleBtn.textContent).toContain('→');
+
+		cover.isRetrying = true;
+		await cover.updateComplete;
+
+		const activeBtn = cover.shadowRoot?.querySelector('button.primary') as HTMLButtonElement;
+		expect(activeBtn.disabled).toBe(true);
+		expect(activeBtn.querySelector('.spinner')).not.toBeNull();
+		expect(activeBtn.textContent).toContain('Retry');
 	});
 
 	it('renders authentication failed screen and emits relog when clicking Try Again', async () => {

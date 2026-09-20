@@ -29,6 +29,7 @@ export class StatusScreenCover extends LitElement {
 	}
 
 	@property({ type: Number }) loadingState = STATE_CONNECTING_INIT;
+	@property({ type: Boolean }) isRetrying = false;
 
 	@state() private authTab: 'login' | 'signup' = 'login';
 	@state() private emailInput = '';
@@ -289,6 +290,33 @@ export class StatusScreenCover extends LitElement {
 				color: #ef4444;
 				font-size: 0.85em;
 			}
+			.retry-btn {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				gap: 8px;
+			}
+			.retry-btn .icon-slot {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 14px;
+				height: 14px;
+			}
+			.retry-btn .spinner {
+				width: 12px;
+				height: 12px;
+				border: 2px solid currentColor;
+				border-top-color: transparent;
+				border-radius: 50%;
+				animation: spin 0.8s linear infinite;
+				box-sizing: border-box;
+			}
+			@keyframes spin {
+				to {
+					transform: rotate(360deg);
+				}
+			}
 		`
 	];
 
@@ -423,6 +451,33 @@ export class StatusScreenCover extends LitElement {
 		`;
 	}
 
+	private renderRetryButton(label = 'Retry'): TemplateResult {
+		return html`
+			<button
+				class="primary retry-btn"
+				?disabled=${this.isRetrying}
+				@click=${() => this.dispatchEvent(new CustomEvent('retry'))}
+			>
+				<span>${label}</span>
+				<span class="icon-slot">
+					${this.isRetrying
+						? html`<span class="spinner" aria-hidden="true"></span>`
+						: html`<span class="arrow" aria-hidden="true">→</span>`}
+				</span>
+			</button>
+		`;
+	}
+
+	private renderConnectionFailed(): TemplateResult {
+		return html`
+			<h2>Unable to Connect 🔌</h2>
+			<p>Could not reach the server. Please verify that the server is running and your connection is active.</p>
+			<div class="dialog-actions">
+				${this.renderRetryButton()}
+			</div>
+		`;
+	}
+
 	private renderCertMissing(): TemplateResult {
 		return html`
 			<h2>🔒 Device Certificate Required</h2>
@@ -432,9 +487,7 @@ export class StatusScreenCover extends LitElement {
 				Please verify your device certificate is enrolled and retry.
 			</p>
 			<div class="dialog-actions">
-				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>
-					Retry Connection
-				</button>
+				${this.renderRetryButton('Retry Connection')}
 			</div>
 		`;
 	}
@@ -454,7 +507,7 @@ export class StatusScreenCover extends LitElement {
 			<h2>Network Error 📶</h2>
 			<p>Unable to reach the server. Please check your internet connection.</p>
 			<div class="dialog-actions">
-				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
+				${this.renderRetryButton()}
 			</div>
 		`;
 	}
@@ -464,7 +517,7 @@ export class StatusScreenCover extends LitElement {
 			<h2>Server Error 🖥️</h2>
 			<p>The server encountered a problem. Please try again later.</p>
 			<div class="dialog-actions">
-				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
+				${this.renderRetryButton()}
 			</div>
 		`;
 	}
@@ -474,7 +527,7 @@ export class StatusScreenCover extends LitElement {
 			<h2>Client Error ❌</h2>
 			<p>An unexpected error occurred in the application.</p>
 			<div class="dialog-actions">
-				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
+				${this.renderRetryButton()}
 			</div>
 		`;
 	}
@@ -484,7 +537,7 @@ export class StatusScreenCover extends LitElement {
 			<h2>Validation Error ⚠️</h2>
 			<p>The hero data did not pass server validation.</p>
 			<div class="dialog-actions">
-				<button class="primary" @click=${() => this.dispatchEvent(new CustomEvent('retry'))}>Retry</button>
+				${this.renderRetryButton()}
 			</div>
 		`;
 	}
@@ -494,6 +547,7 @@ export class StatusScreenCover extends LitElement {
 			case STATE_CONNECTING_INIT:
 				return html`<h1>Connecting to server...</h1>`;
 			case STATE_CONNECTING_FAILED:
+				return this.renderConnectionFailed();
 			case STATE_CERT_MISSING:
 				return this.renderCertMissing();
 			case STATE_AUTH_EMAIL:

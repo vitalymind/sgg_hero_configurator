@@ -6,6 +6,7 @@ import { state, query } from 'lit/decorators.js';
 import {
 	STATE_CONNECTING_FAILED,
 	STATE_CONNECTING_INIT,
+	STATE_CERT_MISSING,
 	STATE_AUTH_EMAIL,
 	STATE_AUTH_SENDING_OTP,
 	STATE_AUTH_OTP,
@@ -30,6 +31,7 @@ export class HeroConfigurator extends LitElement {
 
 	@state() private showStatusCover = true;
 	@state() private loadingState = STATE_CONNECTING_INIT;
+	@state() private isRetrying = false;
 
 	@query('hero-manager') manager?: HeroManager;
 	@query('status-screen-cover') statusCover?: StatusScreenCover;
@@ -45,6 +47,7 @@ export class HeroConfigurator extends LitElement {
 				? html`
 						<status-screen-cover
 							.loadingState=${this.loadingState}
+							.isRetrying=${this.isRetrying}
 							@send-otp=${this.handleSendOtp}
 							@sign-up=${this.handleSignUp}
 							@verify-otp=${this.handleVerifyOtp}
@@ -74,10 +77,14 @@ export class HeroConfigurator extends LitElement {
 		}
 	}
 
-	private restartApp() {
+	private async restartApp(): Promise<void> {
 		this.clean();
-		this.loadingState = STATE_CONNECTING_INIT;
-		this.initServerConnection();
+		this.isRetrying = true;
+		try {
+			await this.initServerConnection();
+		} finally {
+			this.isRetrying = false;
+		}
 	}
 
 	private relogin() {
@@ -96,6 +103,8 @@ export class HeroConfigurator extends LitElement {
 				this.showStatusCover = false;
 			} else if (result.status === 401) {
 				this.loadingState = STATE_AUTH_EMAIL;
+			} else if (result.status === 403) {
+				this.loadingState = STATE_CERT_MISSING;
 			} else {
 				this.loadingState = STATE_CONNECTING_FAILED;
 			}
