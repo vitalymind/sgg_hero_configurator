@@ -48,7 +48,6 @@ describe('HeroFormDialog component', () => {
 		element.editingHero = mockHero;
 		element.isOpen = true;
 		await element.updateComplete;
-		await element.updateComplete;
 
 		expect(element.shadowRoot?.querySelector('h1')?.textContent).toBe('Edit Hero');
 		expect(element.shadowRoot?.querySelector('.uuid-span')?.textContent).toContain(mockHero.uuid);
@@ -72,7 +71,6 @@ describe('HeroFormDialog component', () => {
 
 		element.editingHero = mockHero;
 		element.isOpen = true;
-		await element.updateComplete;
 		await element.updateComplete;
 
 		const saveSpy = vi.fn();
@@ -100,7 +98,6 @@ describe('HeroFormDialog component', () => {
 
 		element.editingHero = mockHero;
 		element.isOpen = true;
-		await element.updateComplete;
 		await element.updateComplete;
 
 		const deleteSpy = vi.fn();

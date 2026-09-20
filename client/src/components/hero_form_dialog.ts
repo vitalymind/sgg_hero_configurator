@@ -112,7 +112,7 @@ export class HeroFormDialog extends LitElement {
 		this.lastValidDefense = '0';
 	}
 
-	updated(changedProperties: Map<string, PropertyValues<HeroFormDialog>>) {
+	willUpdate(changedProperties: Map<string, PropertyValues<HeroFormDialog>>) {
 		if (changedProperties.has('editingHero') || changedProperties.has('isOpen')) {
 			if (this.isOpen) {
 				if (this.editingHero) {
